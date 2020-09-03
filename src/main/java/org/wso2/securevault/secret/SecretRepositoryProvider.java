@@ -20,7 +20,8 @@ package org.wso2.securevault.secret;
 
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
-
+import org.wso2.securevault.secret.repository.Vault1SecretRepository;
+import org.wso2.securevault.secret.repository.Vault2SecretRepository;
 
 /**
  * Factory method for creating a instance of a SecretRepository
@@ -35,4 +36,12 @@ public interface SecretRepositoryProvider {
      * @return A SecretRepository implementation
      */
     public SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust);
+
+    default public SecretRepository getVaultRepository(String vaultRepository,IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
+        if(vaultRepository == "vault1"){
+            return new Vault1SecretRepository(identity, trust);
+        } else{
+            return new Vault2SecretRepository(identity, trust);
+        }
+    }
 }
