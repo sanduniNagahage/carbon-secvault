@@ -260,13 +260,30 @@ public class SecretManager {
      * @return If there is a secret , otherwise , alias itself
      */
     public String getSecret(String alias) {
-        if (!initialized || parentRepository == null) {
-            if (log.isDebugEnabled()) {
-                log.debug("There is no secret repository. Returning alias itself");
+        String provider = "vault";
+        String vprovider = "vault";
+
+        String repository = "vault1";
+        String v1repository = "vault1";
+        SecretRepository repo;
+
+        if (provider == vprovider ){
+            if (repository == v1repository){
+                repo = vaultRepositoryArray.get(0);
+                return repo.getSecret(alias);
+            }else {
+                repo = vaultRepositoryArray.get(1);
+                return  repo.getSecret(alias);
             }
-            return alias;
+        }else {
+            if (!initialized || parentRepository == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("There is no secret repository. Returning alias itself");
+                }
+                return alias;
+            }
+            return parentRepository.getSecret(alias);
         }
-        return parentRepository.getSecret(alias);
     }
 
     /**
