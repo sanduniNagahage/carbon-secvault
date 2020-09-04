@@ -1,5 +1,19 @@
-/**
+/*
+ * Copyright (c) 2020, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.wso2.securevault.secret;
 
@@ -13,6 +27,7 @@ import org.wso2.securevault.definition.TrustKeyStoreInformation;
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 
+import java.util.ArrayList;
 import java.util.Properties;
 
 /**
@@ -46,6 +61,13 @@ public class SecretManager {
     private String globalSecretProvider =null;
     // property key for global secret provider
     private final static String PROP_SECRET_PROVIDER="carbon.secretProvider";
+
+    /*property key for vaultSecretRepositories*/
+    private final static String PROP_VAULT_SECRET_REPOSITORIES = "vaultSecretRepositories";
+    /*get all the vault repositories to an array */
+    ArrayList<SecretRepository> vaultRepositoryArray = new ArrayList<>();
+    /*single vault secret repository*/
+    SecretRepository vaultRepositoryArrayItem;
 
     public static SecretManager getInstance() {
         return SECRET_MANAGER;
@@ -117,6 +139,24 @@ public class SecretManager {
             return;
         }
 
+        /* vaultSecretRepositories=vault1,vault2 */
+        String vaultRepositoriesString = MiscellaneousUtil.getProperty(
+                configurationProperties, PROP_VAULT_SECRET_REPOSITORIES, null);
+        if (vaultRepositoriesString == null || "".equals(vaultRepositoriesString)){
+            if(log.isDebugEnabled()){
+                log.debug("No vault repositories have been configured");
+            }
+            return;
+        }
+
+        /* add vaultRepositoriesString to an array */
+        String[] vaultRepositories = vaultRepositoriesString.split(",");
+        if (vaultRepositories == null || vaultRepositories.length == 0){
+            if(log.isDebugEnabled()){
+                log.debug("No vault repositories have been configured");
+            }
+            return;
+        }
 
         //Create a KeyStore Information  for private key entry KeyStore
         IdentityKeyStoreInformation identityInformation =
@@ -185,14 +225,29 @@ public class SecretManager {
                 Object instance = aClass.newInstance();
 
                 if (instance instanceof SecretRepositoryProvider) {
-                    SecretRepository secretRepository = ((SecretRepositoryProvider) instance).
-                            getSecretRepository(identityKeyStoreWrapper, trustKeyStoreWrapper);
-                    secretRepository.init(configurationProperties, id);
-                    if (parentRepository == null) {
-                        parentRepository = secretRepository;
+
+                    /*$secret{vault:vault1:alias} --> vault-provider*/
+                    String providerVault = "vault";
+                    if(secretRepo.equals(providerVault)){
+
+                        /*$secret{vault:vault1:alias} --> vault1-repository*/
+                        //String vaultRepository = "vault1";
+
+                        for(String vaultRepo : vaultRepositories){
+                            vaultRepositoryArrayItem = ((SecretRepositoryProvider) instance).getVaultRepository(vaultRepo, identityKeyStoreWrapper, trustKeyStoreWrapper);
+                            vaultRepositoryArrayItem.init(configurationProperties,id);
+                            vaultRepositoryArray.add(vaultRepositoryArrayItem);
+                        }
+                    }else{
+                        SecretRepository secretRepository = ((SecretRepositoryProvider) instance).
+                                getSecretRepository(identityKeyStoreWrapper, trustKeyStoreWrapper);
+                        secretRepository.init(configurationProperties, id);
+                        if (parentRepository == null) {
+                            parentRepository = secretRepository;
+                        }
+                        secretRepository.setParent(currentParent);
+                        currentParent = secretRepository;
                     }
-                    secretRepository.setParent(currentParent);
-                    currentParent = secretRepository;
                     if (log.isDebugEnabled()) {
                         log.debug("Successfully Initiate a Secret Repository provided by : "
                                 + provider);
