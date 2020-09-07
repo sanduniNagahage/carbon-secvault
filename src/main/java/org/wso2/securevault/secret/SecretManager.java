@@ -48,12 +48,12 @@ public class SecretManager {
     // property key for global secret provider
     private final static String PROP_SECRET_PROVIDER="carbon.secretProvider";
 
-    /*property key for vaultSecretRepositories*/
-    private final static String PROP_VAULT_SECRET_REPOSITORIES = "vaultSecretRepositories";
     /*get all the vault repositories to an array */
     ArrayList<SecretRepository> vaultRepositoryArray = new ArrayList<SecretRepository>();
     /*single vault secret repository*/
     SecretRepository vaultRepositoryArrayItem;
+    /*get the types of vaults defined in the configuration properties*/
+    ArrayList<String> vaultTypes = new ArrayList<>();
 
     public static SecretManager getInstance() {
         return SECRET_MANAGER;
@@ -124,24 +124,24 @@ public class SecretManager {
             }
             return;
         }
-        /* vaultSecretRepositories=vault1,vault2 */
-        String vaultRepositoriesString = MiscellaneousUtil.getProperty(
-                configurationProperties, PROP_VAULT_SECRET_REPOSITORIES, null);
-        if (vaultRepositoriesString == null || "".equals(vaultRepositoriesString)){
-            if(log.isDebugEnabled()){
-                log.debug("No vault repositories have been configured");
-            }
-            return;
-        }
+//        /* vaultSecretRepositories=vault1,vault2 */
+//        String vaultRepositoriesString = MiscellaneousUtil.getProperty(
+//                configurationProperties, PROP_VAULT_SECRET_REPOSITORIES, null);
+//        if (vaultRepositoriesString == null || "".equals(vaultRepositoriesString)){
+//            if(log.isDebugEnabled()){
+//                log.debug("No vault repositories have been configured");
+//            }
+//            return;
+//        }
 
         /* add vaultRepositoriesString to an array */
-        String[] vaultRepositories = vaultRepositoriesString.split(",");
-        if (vaultRepositories == null || vaultRepositories.length == 0){
-            if(log.isDebugEnabled()){
-                log.debug("No vault repositories have been configured");
-            }
-            return;
-        }
+//        String[] vaultRepositories = vaultRepositoriesString.split(",");
+//        if (vaultRepositories == null || vaultRepositories.length == 0){
+//            if(log.isDebugEnabled()){
+//                log.debug("No vault repositories have been configured");
+//            }
+//            return;
+//        }
 
         //Create a KeyStore Information  for private key entry KeyStore
         IdentityKeyStoreInformation identityInformation =
@@ -210,18 +210,7 @@ public class SecretManager {
                 Object instance = aClass.newInstance();
 
                 if (instance instanceof SecretRepositoryProvider) {
-                    /*$secret{vault:vault1:alias} --> vault-provider*/
-                    String providerVault = "vault";
-
-                    if(secretRepo.equals(providerVault)){
-                        /*$secret{vault:vault1:alias} --> vault1-repository*/
-                        //String vaultRepository = "vault1";
-                        for(String vaultRepo : vaultRepositories){
-                            vaultRepositoryArrayItem = ((SecretRepositoryProvider) instance).getVaultRepository(vaultRepo, identityKeyStoreWrapper, trustKeyStoreWrapper);
-                            vaultRepositoryArrayItem.init(configurationProperties,id);
-                            vaultRepositoryArray.add(vaultRepositoryArrayItem);
-                        }
-                    }else{
+                    if(secretRepo.equals("file")){
                         SecretRepository secretRepository = ((SecretRepositoryProvider) instance).
                                 getSecretRepository(identityKeyStoreWrapper, trustKeyStoreWrapper);
                         secretRepository.init(configurationProperties, id);
@@ -230,7 +219,41 @@ public class SecretManager {
                         }
                         secretRepository.setParent(currentParent);
                         currentParent = secretRepository;
+                    }else{
+                        /*repositories other than the file base */
+                        String externalRepositoriesString = MiscellaneousUtil.getProperty(
+                                configurationProperties, secretRepo+"SecretRepositories", null);
+                        if (externalRepositoriesString == null || "".equals(externalRepositoriesString)){
+                            if(log.isDebugEnabled()){
+                                log.debug("No repositories have been configured");
+                            }
+                            return;
+                        }
+
+                        String[] externalRepositories = externalRepositoriesString.split(",");
+                        if (externalRepositories == null || externalRepositories.length == 0){
+                            if(log.isDebugEnabled()){
+                                log.debug("No repositories have been configured");
+                            }
+                            return;
+                        }
+                        ((SecretRepositoryProvider) instance).initProvider(externalRepositories,
+                                configurationProperties,secretRepo,
+                                identityKeyStoreWrapper, trustKeyStoreWrapper);
                     }
+
+//                    /*$secret{vault:vault1:alias} --> vault-provider*/
+//                    String providerVault = "vault";
+//
+//                    if(secretRepo.equals(providerVault)){
+//                        /*$secret{vault:vault1:alias} --> vault1-repository*/
+//                        //String vaultRepository = "vault1";
+//                        for(String vaultRepo : vaultRepositories){
+//                            vaultRepositoryArrayItem = ((SecretRepositoryProvider) instance).getVaultRepository(vaultRepo, identityKeyStoreWrapper, trustKeyStoreWrapper);
+//                            vaultRepositoryArrayItem.init(configurationProperties,id);
+//                            vaultRepositoryArray.add(vaultRepositoryArrayItem);
+//                        }
+//                    }
 
                     if (log.isDebugEnabled()) {
                         log.debug("Successfully Initiate a Secret Repository provided by : "

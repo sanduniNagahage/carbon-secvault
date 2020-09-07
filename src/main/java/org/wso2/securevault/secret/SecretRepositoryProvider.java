@@ -23,6 +23,8 @@ import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 import org.wso2.securevault.secret.repository.Vault1SecretRepository;
 import org.wso2.securevault.secret.repository.Vault2SecretRepository;
 
+import java.util.Properties;
+
 /**
  * Factory method for creating a instance of a SecretRepository
  */
@@ -37,12 +39,33 @@ public interface SecretRepositoryProvider {
      */
     public SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust);
 
-    default public SecretRepository getVaultRepository(String vaultRepository,IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
-
-        if(vaultRepository == "vault1"){
-            return new Vault1SecretRepository(identity, trust);
-        } else{
-            return new Vault2SecretRepository(identity, trust);
+    default public SecretRepository[] initProvider(String[] externalRepositories, Properties configurationProperties,
+                                                   String key,
+                                                   IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust){
+        filterConfigurations(configurationProperties,key);
+        for (String externalRepo : externalRepositories){
+            switch (externalRepo){
+                case "vault1":
+//                    (new Vault1SecretRepository(identity, trust)).init();
+                    break;
+                case  "vault2":
+                    Vault2SecretRepository vault2 = new Vault2SecretRepository(identity,trust);
+                    break;
+            }
         }
+        return new SecretRepository[0];
     }
+
+    default public void filterConfigurations(Properties properties, String key){
+
+    }
+
+//    default public SecretRepository getVaultRepository(String vaultRepository,IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
+//
+//        if(vaultRepository == "vault1"){
+//            return new Vault1SecretRepository(identity, trust);
+//        } else{
+//            return new Vault2SecretRepository(identity, trust);
+//        }
+//    }
 }

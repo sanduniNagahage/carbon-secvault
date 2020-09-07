@@ -28,13 +28,13 @@ public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
         return null;
     }
 
-    @Override
-    public SecretRepository getVaultRepository(String vaultRepository, IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
-
-        if(vaultRepository.equals("vault1")){
-            return new Vault1SecretRepository(identity, trust);
-        } else{
-            return new Vault2SecretRepository(identity, trust);
-        }
-    }
+//    @Override
+//    public SecretRepository getVaultRepository(String vaultRepository, IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
+//
+//        if(vaultRepository.equals("vault1")){
+//            return new Vault1SecretRepository(identity, trust);
+//        } else{
+//            return new Vault2SecretRepository(identity, trust);
+//        }
+//    }
 }
