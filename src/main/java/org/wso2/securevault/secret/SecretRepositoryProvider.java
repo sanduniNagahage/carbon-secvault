@@ -23,6 +23,7 @@ import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 import org.wso2.securevault.secret.repository.Vault1SecretRepository;
 import org.wso2.securevault.secret.repository.Vault2SecretRepository;
 
+import java.util.ArrayList;
 import java.util.Properties;
 
 /**
@@ -37,35 +38,52 @@ public interface SecretRepositoryProvider {
      * @param trust    Trust KeyStore
      * @return A SecretRepository implementation
      */
-    public SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust);
+    SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust);
 
-    default public SecretRepository[] initProvider(String[] externalRepositories, Properties configurationProperties,
-                                                   String key,
-                                                   IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust){
-        filterConfigurations(configurationProperties,key);
-        for (String externalRepo : externalRepositories){
-            switch (externalRepo){
-                case "vault1":
-//                    (new Vault1SecretRepository(identity, trust)).init();
-                    break;
-                case  "vault2":
-                    Vault2SecretRepository vault2 = new Vault2SecretRepository(identity,trust);
-                    break;
+    /**
+     * Returns a List of initialized SecretRepositories
+     *
+     * @param externalRepositories    Repositories other than the file base
+     * @param configurationProperties Properties from secret configurations file
+     * @param key                     Provider type
+     * @param identity                Identity KeyStore
+     * @param trust                   Trust KeyStore
+     * @return A List of initialized SecretRepositories
+     */
+    default ArrayList<SecretRepository> initProvider(String[] externalRepositories,
+                                                     Properties configurationProperties,
+                                                     String key,
+                                                     IdentityKeyStoreWrapper identity,
+                                                     TrustKeyStoreWrapper trust){ return null; }
+
+    /**
+     * Filter properties based on the provider and the repository
+     * @param properties Properties from secret configurations file
+     * @param provider   Provider string
+     * @param repository Repository string
+     * @return filtered set of properties
+     */
+    default Properties filterConfigurations(Properties properties, String provider, String repository){
+        String propertyString = "secretRepositories."+provider+".properties"+repository;
+        Properties filteredProps = new Properties();
+        filteredProps = (Properties) properties.clone();
+        Properties finalFilteredProps = filteredProps;
+        properties.forEach((k, v) ->{
+            if(!(k.toString().contains(propertyString))){
+                finalFilteredProps.remove(k);
             }
-        }
-        return new SecretRepository[0];
+
+        });
+        return finalFilteredProps;
     }
 
-    default public void filterConfigurations(Properties properties, String key){
-
-    }
-
-//    default public SecretRepository getVaultRepository(String vaultRepository,IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
-//
-//        if(vaultRepository == "vault1"){
-//            return new Vault1SecretRepository(identity, trust);
-//        } else{
-//            return new Vault2SecretRepository(identity, trust);
-//        }
-//    }
+    /**
+     *
+     * @param vaultRepository
+     * @param identity
+     * @param trust Trust KeyStore
+     * @return
+     */
+    default SecretRepository getVaultRepository(String vaultRepository, IdentityKeyStoreWrapper identity,
+                                                TrustKeyStoreWrapper trust) { return null; }
 }
