@@ -22,19 +22,73 @@ import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 import org.wso2.securevault.secret.SecretRepository;
 import org.wso2.securevault.secret.SecretRepositoryProvider;
 
+import java.util.ArrayList;
+import java.util.Properties;
+
 public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
+
+    SecretRepository vaultRepositoryArrayItem;
+    ArrayList<SecretRepository> vaultRepositoryArray = new ArrayList<>();
+
     @Override
     public SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
         return null;
     }
 
-//    @Override
-//    public SecretRepository getVaultRepository(String vaultRepository, IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
-//
-//        if(vaultRepository.equals("vault1")){
-//            return new Vault1SecretRepository(identity, trust);
-//        } else{
-//            return new Vault2SecretRepository(identity, trust);
-//        }
-//    }
+    @Override
+    public ArrayList<SecretRepository> initProvider(String[] externalRepositories,
+                                                    Properties configurationProperties,
+                                                    String key,
+                                                    IdentityKeyStoreWrapper identity,
+                                                    TrustKeyStoreWrapper trust) {
+
+        Properties repositoryProperties;
+        for (String externalRepo : externalRepositories){
+            switch (externalRepo){
+                case "vault1":
+                    repositoryProperties = filterConfigurations(configurationProperties,key,"vault1");
+                    vaultRepositoryArrayItem = getVaultRepository("vault1",identity, trust);
+                    vaultRepositoryArrayItem.init(repositoryProperties);
+                    vaultRepositoryArray.add(vaultRepositoryArrayItem);
+                    break;
+                case  "vault2":
+                    repositoryProperties = filterConfigurations(configurationProperties,key,"vault2");
+//                    (new Vault2SecretRepository(identity, trust)).init(repositoryProperties);
+                    vaultRepositoryArrayItem = getVaultRepository("vault2",identity, trust);
+                    vaultRepositoryArrayItem.init(repositoryProperties);
+                    vaultRepositoryArray.add(vaultRepositoryArrayItem);
+                    break;
+            }
+        }
+        return vaultRepositoryArray;
+    }
+
+    @Override
+    public Properties filterConfigurations(Properties properties, String provider, String repository) {
+        String propertyString = "secretRepositories."+provider+".properties."+repository;
+        new Properties();
+        Properties filteredProps;
+        filteredProps = (Properties) properties.clone();
+        Properties finalFilteredProps = filteredProps;
+        properties.forEach((k, v) ->{
+            if(!(k.toString().contains(propertyString))){
+                finalFilteredProps.remove(k);
+            }
+
+        });
+        return finalFilteredProps;
+    }
+
+        @Override
+    public SecretRepository getVaultRepository(String vaultRepository, IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
+
+        switch (vaultRepository){
+            case "vault1":
+                return new Vault1SecretRepository(identity, trust);
+            case "vault2":
+                return new Vault2SecretRepository(identity, trust);
+            default:
+                return null;
+        }
+    }
 }

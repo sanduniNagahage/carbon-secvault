@@ -40,7 +40,10 @@ public class Vault2SecretRepository implements SecretRepository {
     }
 
     @Override
-    public void init(Properties properties, String id) {
+    public void init(Properties properties, String id) { }
+
+    @Override
+    public void init(Properties properties) {
 
         admin_password = "admin";
         user_store_password = "admin";
