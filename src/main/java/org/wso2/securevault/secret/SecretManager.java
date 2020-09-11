@@ -46,8 +46,10 @@ public class SecretManager {
     // property key for global secret provider
     private final static String PROP_SECRET_PROVIDER="carbon.secretProvider";
 
-    /*get all the vault repositories to an array */
+    /*get the vault repositories belongs to a provider to an array */
     ArrayList<SecretRepository> externalRepositoryArray = new ArrayList<>();
+    /*get all the vault repositories to an array */
+    ArrayList<SecretRepository> allExternalRepositoryArray = new ArrayList<>();
 
     public static SecretManager getInstance() {
         return SECRET_MANAGER;
@@ -213,10 +215,12 @@ public class SecretManager {
                             }
                             return;
                         }
-                        externalRepositoryArray = ((SecretRepositoryProvider) instance).initProvider(externalRepositories,
-                                configurationProperties,secretRepo,
-                                identityKeyStoreWrapper, trustKeyStoreWrapper);
-
+                        externalRepositoryArray = ((SecretRepositoryProvider) instance).initProvider(
+                                                    externalRepositories, configurationProperties,secretRepo,
+                                                    identityKeyStoreWrapper, trustKeyStoreWrapper);
+                        for(SecretRepository repo:externalRepositoryArray){
+                            allExternalRepositoryArray.add(repo);
+                        }
                     }
 
                     if (log.isDebugEnabled()) {
@@ -246,23 +250,18 @@ public class SecretManager {
      * @param alias The logical or alias name
      * @return If there is a secret , otherwise , alias itself
      */
-    public String getSecret(String alias) {
-        String provider = "vault";
-        String vprovider = "vault";
-
-        String repository = "vault1";
-        String v1repository = "vault1";
+    public String getSecret(String provider,String repository,String alias) {
         SecretRepository repo;
 
-        if (provider.equals(vprovider)){
-            if (repository.equals(v1repository)){
-                repo = externalRepositoryArray.get(0);
+        if (provider.equals("vault")){
+            if (repository.equals("hashicorp")){
+                repo = allExternalRepositoryArray.get(0);
                 return repo.getSecret(alias);
             }else {
-                repo = externalRepositoryArray.get(1);
+                repo = allExternalRepositoryArray.get(1);
                 return  repo.getSecret(alias);
             }
-        }else {
+        }else if(provider.equals("file")) {
             if (!initialized || parentRepository == null) {
                 if (log.isDebugEnabled()) {
                     log.debug("There is no secret repository. Returning alias itself");
@@ -271,6 +270,7 @@ public class SecretManager {
             }
             return parentRepository.getSecret(alias);
         }
+        return null;
     }
 
     /**

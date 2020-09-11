@@ -40,8 +40,12 @@ public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHa
         }
 
         String id = singleSecretCallback.getId();
+        String[] parts = id.split("-");
+        String provider = parts[0];
+        String repository = parts[1];
+        String alias = parts[2];
         if (id != null && !"".equals(id)) {
-            singleSecretCallback.setSecret(secretManager.getSecret(id));
+            singleSecretCallback.setSecret(secretManager.getSecret(provider,repository,alias));
         }
     }
 }

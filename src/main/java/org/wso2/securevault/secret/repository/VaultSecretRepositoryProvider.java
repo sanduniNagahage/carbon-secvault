@@ -17,10 +17,13 @@
  */
 package org.wso2.securevault.secret.repository;
 
+
+import org.wso2.carbon.securevault.hashicorp.repository.HashiCorpSecretRepository;
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 import org.wso2.securevault.secret.SecretRepository;
 import org.wso2.securevault.secret.SecretRepositoryProvider;
+
 
 import java.util.ArrayList;
 import java.util.Properties;
@@ -44,21 +47,12 @@ public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
 
         Properties repositoryProperties;
         for (String externalRepo : externalRepositories){
-            switch (externalRepo){
-                case "vault1":
-                    repositoryProperties = filterConfigurations(configurationProperties,key,"vault1");
-                    vaultRepositoryArrayItem = getVaultRepository("vault1",identity, trust);
-                    vaultRepositoryArrayItem.init(repositoryProperties);
-                    vaultRepositoryArray.add(vaultRepositoryArrayItem);
-                    break;
-                case  "vault2":
-                    repositoryProperties = filterConfigurations(configurationProperties,key,"vault2");
-//                    (new Vault2SecretRepository(identity, trust)).init(repositoryProperties);
-                    vaultRepositoryArrayItem = getVaultRepository("vault2",identity, trust);
-                    vaultRepositoryArrayItem.init(repositoryProperties);
-                    vaultRepositoryArray.add(vaultRepositoryArrayItem);
-                    break;
-            }
+            repositoryProperties = filterConfigurations(configurationProperties,key,externalRepo);
+//            (new Vault2SecretRepository(identity, trust)).init(repositoryProperties);
+//            vaultRepositoryArrayItem = getSecretRepository(identity, trust);
+            vaultRepositoryArrayItem = getVaultRepository(externalRepo,identity, trust);
+            vaultRepositoryArrayItem.init(repositoryProperties,key);
+            vaultRepositoryArray.add(vaultRepositoryArrayItem);
         }
         return vaultRepositoryArray;
     }
@@ -87,6 +81,8 @@ public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
                 return new Vault1SecretRepository(identity, trust);
             case "vault2":
                 return new Vault2SecretRepository(identity, trust);
+            case "hashicorp":
+                return new HashiCorpSecretRepository(identity, trust);
             default:
                 return null;
         }

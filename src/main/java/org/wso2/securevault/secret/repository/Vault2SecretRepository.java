@@ -40,18 +40,16 @@ public class Vault2SecretRepository implements SecretRepository {
     }
 
     @Override
-    public void init(Properties properties, String id) { }
-
-    @Override
-    public void init(Properties properties) {
-
+    public void init(Properties properties, String id) {
         admin_password = "admin";
         user_store_password = "admin";
         identity_db_password = "wso2carbon";
         shared_db_password = "wso2carbon";
         keystore_password = "wso2carbon";
-
     }
+
+    @Override
+    public void init(Properties properties) { }
 
     @Override
     public String getSecret(String alias) {

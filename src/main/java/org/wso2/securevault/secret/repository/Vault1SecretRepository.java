@@ -34,24 +34,26 @@ public class Vault1SecretRepository implements SecretRepository {
     String shared_db_password ;
     String keystore_password ;
 
+    public boolean canHandle(String repoName){
+        return (repoName=="vault1");
+    }
+
     public Vault1SecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
         this.identity = identity;
         this.trust = trust;
     }
 
     @Override
-    public void init(Properties properties, String id) { }
-
-    @Override
-    public void init(Properties properties) {
-
+    public void init(Properties properties, String id) {
         admin_password = "admin";
         user_store_password = "admin";
         identity_db_password = "wso2carbon";
         shared_db_password = "wso2carbon";
         keystore_password = "wso2carbon";
-
     }
+
+    @Override
+    public void init(Properties properties) { }
 
     @Override
     public String getSecret(String alias) {

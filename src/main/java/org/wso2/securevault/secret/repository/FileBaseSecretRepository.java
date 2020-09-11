@@ -32,8 +32,10 @@ import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 import org.wso2.securevault.secret.SecretRepository;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Holds all secrets in a file
@@ -54,6 +56,7 @@ public class FileBaseSecretRepository implements SecretRepository {
     private SecretRepository parentRepository;
     /*Map of secrets keyed by alias for property name */
     private final Map<String, String> secrets = new HashMap<>();
+    private final Map<String, String> secrets1 = new HashMap<>();
     /*Map of encrypted values keyed by alias for property name */
     private final Map<String, String> encryptedData = new HashMap<>();
     /*Wrapper for Identity KeyStore */
@@ -134,6 +137,16 @@ public class FileBaseSecretRepository implements SecretRepository {
             String decryptedText = new String(baseCipher.decrypt(encryptedText.trim().getBytes()));
             secrets.put(key, decryptedText);
         }
+//        Set keys = secrets.keySet();
+//        Iterator i=keys.iterator();
+//        while(i.hasNext()){
+//            String secret = String.valueOf(i.next());
+//            String[] parts = secret.split("-");
+//            String alias = parts[2];
+//            Object obj = secrets.remove(i.next());
+//            secrets1.put(alias, String.valueOf(obj));
+//        }
+
         initialize = true;
     }
 
@@ -148,14 +161,14 @@ public class FileBaseSecretRepository implements SecretRepository {
             return alias; // TODO is it needed to throw an error?
         }
 
-        if (!initialize || secrets.isEmpty()) {
+        if (!initialize || secrets1.isEmpty()) {
             if (log.isDebugEnabled()) {
                 log.debug("There is no secret found for alias '" + alias + "' returning itself");
             }
             return alias;
         }
 
-        String secret = secrets.get(alias);
+        String secret = secrets1.get(alias);
         if (secret == null || "".equals(secret)) {
             if (log.isDebugEnabled()) {
                 log.debug("There is no secret found for alias '" + alias + "' returning itself");
