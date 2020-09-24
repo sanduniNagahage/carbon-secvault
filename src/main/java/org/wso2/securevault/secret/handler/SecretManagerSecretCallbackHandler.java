@@ -31,6 +31,9 @@ public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHa
     private final SecretManager secretManager = SecretManager.getInstance();
 
     protected void handleSingleSecretCallback(SingleSecretCallback singleSecretCallback) {
+        String alias;
+        String provider = null;
+        String repository = null;
 
         if (!secretManager.isInitialized()) {
             if (log.isWarnEnabled()) {
@@ -40,10 +43,17 @@ public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHa
         }
 
         String id = singleSecretCallback.getId();
-        String[] parts = id.split("-");
-        String provider = parts[0];
-        String repository = parts[1];
-        String alias = parts[2];
+        String[] parts = id.split(":");
+        if (parts.length ==1){
+            provider = "file";
+            repository = "filebase";
+            alias = id;
+        }else {
+            provider = parts[0];
+            repository = parts[1];
+            alias = parts[2];
+        }
+
         if (id != null && !"".equals(id)) {
             singleSecretCallback.setSecret(secretManager.getSecret(provider,repository,alias));
         }

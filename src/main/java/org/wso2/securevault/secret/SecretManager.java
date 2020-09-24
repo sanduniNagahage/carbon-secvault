@@ -11,7 +11,8 @@ import org.wso2.securevault.definition.TrustKeyStoreInformation;
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Properties;
 
 /**
@@ -46,10 +47,10 @@ public class SecretManager {
     // property key for global secret provider
     private final static String PROP_SECRET_PROVIDER="carbon.secretProvider";
 
-    /*get the vault repositories belongs to a provider to an array */
-    ArrayList<SecretRepository> externalRepositoryArray = new ArrayList<>();
-    /*get all the vault repositories to an array */
-    ArrayList<SecretRepository> allExternalRepositoryArray = new ArrayList<>();
+    /*get all the vault repositories to a Hash Map */
+    HashMap<String,SecretRepository> allExternalRepositories = new HashMap<>();
+    /*Secret repository providers list*/
+    String[] repositories;
 
     public static SecretManager getInstance() {
         return SECRET_MANAGER;
@@ -113,7 +114,7 @@ public class SecretManager {
             return;
         }
 
-        String[] repositories = repositoriesString.split(",");
+        repositories = repositoriesString.split(",");
         if (repositories == null || repositories.length == 0) {
             if (log.isDebugEnabled()) {
                 log.debug("No secret repositories have been configured");
@@ -215,12 +216,12 @@ public class SecretManager {
                             }
                             return;
                         }
-                        externalRepositoryArray = ((SecretRepositoryProvider) instance).initProvider(
-                                                    externalRepositories, configurationProperties,secretRepo,
-                                                    identityKeyStoreWrapper, trustKeyStoreWrapper);
-                        for(SecretRepository repo:externalRepositoryArray){
-                            allExternalRepositoryArray.add(repo);
-                        }
+                        allExternalRepositories = ((SecretRepositoryProvider) instance).initProvider(
+                                                                                                    externalRepositories,
+                                                                                                    configurationProperties,
+                                                                                                    secretRepo,
+                                                                                                    identityKeyStoreWrapper,
+                                                                                                    trustKeyStoreWrapper);
                     }
 
                     if (log.isDebugEnabled()) {
@@ -251,24 +252,23 @@ public class SecretManager {
      * @return If there is a secret , otherwise , alias itself
      */
     public String getSecret(String provider,String repository,String alias) {
-        SecretRepository repo;
+        if (Arrays.stream(repositories).anyMatch(provider::equals)) {
+            if (allExternalRepositories.containsKey(repository)){
+                return allExternalRepositories.get(repository).getSecret(alias);
 
-        if (provider.equals("vault")){
-            if (repository.equals("hashicorp")){
-                repo = allExternalRepositoryArray.get(0);
-                return repo.getSecret(alias);
-            }else {
-                repo = allExternalRepositoryArray.get(1);
-                return  repo.getSecret(alias);
-            }
-        }else if(provider.equals("file")) {
-            if (!initialized || parentRepository == null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("There is no secret repository. Returning alias itself");
+            }else if(provider.equals("file")) {
+                if (!initialized || parentRepository == null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("There is no secret repository. Returning alias itself");
+                    }
+                    return alias;
                 }
-                return alias;
+                return parentRepository.getSecret(alias);
+            } else if (log.isDebugEnabled()){
+                log.debug("No such repository can be identified");
             }
-            return parentRepository.getSecret(alias);
+        } else if (log.isDebugEnabled()){
+            log.debug("No such secret repository provider listed under configurations" );
         }
         return null;
     }

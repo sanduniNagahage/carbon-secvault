@@ -57,8 +57,6 @@ public class FileBaseSecretRepository implements SecretRepository {
     /*Map of secrets keyed by alias for property name */
 //    private final Map<String, String> secrets = new HashMap<>();
     private  Map<String, String> secrets = new HashMap<>();
-    private final Map<String, String> secrets1 = new HashMap<>();
-    String newKey;
     /*Map of encrypted values keyed by alias for property name */
     private final Map<String, String> encryptedData = new HashMap<>();
     /*Wrapper for Identity KeyStore */
@@ -139,19 +137,6 @@ public class FileBaseSecretRepository implements SecretRepository {
             String decryptedText = new String(baseCipher.decrypt(encryptedText.trim().getBytes()));
             secrets.put(key, decryptedText);
         }
-        Iterator<Map.Entry<String, String>> secretEntry = secrets.entrySet().iterator();
-        while (secretEntry.hasNext()) {
-            Map.Entry<String, String> set = (Map.Entry<String, String>) secretEntry.next();
-            String secret = set.getKey();
-            String[] parts = secret.split("-");
-            if(parts.length==1){
-                newKey = parts[0];
-            }else {
-                newKey = parts[2];
-            }
-            String value = secrets.get(secret);
-            secrets1.put(newKey, value);
-        }
 
         initialize = true;
     }
@@ -167,14 +152,14 @@ public class FileBaseSecretRepository implements SecretRepository {
             return alias; // TODO is it needed to throw an error?
         }
 
-        if (!initialize || secrets1.isEmpty()) {
+        if (!initialize || secrets.isEmpty()) {
             if (log.isDebugEnabled()) {
                 log.debug("There is no secret found for alias '" + alias + "' returning itself");
             }
             return alias;
         }
 
-        String secret = secrets1.get(alias);
+        String secret = secrets.get(alias);
         if (secret == null || "".equals(secret)) {
             if (log.isDebugEnabled()) {
                 log.debug("There is no secret found for alias '" + alias + "' returning itself");

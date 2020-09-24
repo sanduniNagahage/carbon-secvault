@@ -26,12 +26,14 @@ import org.wso2.securevault.secret.SecretRepositoryProvider;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 
 public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
 
-    SecretRepository vaultRepositoryArrayItem;
+    SecretRepository vaultRepository;
     ArrayList<SecretRepository> vaultRepositoryArray = new ArrayList<>();
+    HashMap<String,SecretRepository> vaultRepositoryMap = new HashMap<>();
 
     @Override
     public SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
@@ -39,27 +41,27 @@ public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
     }
 
     @Override
-    public ArrayList<SecretRepository> initProvider(String[] externalRepositories,
-                                                    Properties configurationProperties,
-                                                    String key,
-                                                    IdentityKeyStoreWrapper identity,
-                                                    TrustKeyStoreWrapper trust) {
+    public HashMap<String, SecretRepository> initProvider(String[] externalRepositories,
+                                                          Properties configurationProperties,
+                                                          String key,
+                                                          IdentityKeyStoreWrapper identity,
+                                                          TrustKeyStoreWrapper trust) {
 
         Properties repositoryProperties;
         for (String externalRepo : externalRepositories){
             repositoryProperties = filterConfigurations(configurationProperties,key,externalRepo);
 //            (new Vault2SecretRepository(identity, trust)).init(repositoryProperties);
 //            vaultRepositoryArrayItem = getSecretRepository(identity, trust);
-            vaultRepositoryArrayItem = getVaultRepository(externalRepo,identity, trust);
-            vaultRepositoryArrayItem.init(repositoryProperties,key);
-            vaultRepositoryArray.add(vaultRepositoryArrayItem);
+            vaultRepository = getVaultRepository(externalRepo,identity, trust);
+            vaultRepository.init(repositoryProperties,key);
+            vaultRepositoryMap.put(externalRepo,vaultRepository);
         }
-        return vaultRepositoryArray;
+        return vaultRepositoryMap;
     }
 
     @Override
     public Properties filterConfigurations(Properties properties, String provider, String repository) {
-        String propertyString = "secretRepositories."+provider+".properties."+repository;
+        String propertyString = "secretRepositories."+provider+"."+repository;
         new Properties();
         Properties filteredProps;
         filteredProps = (Properties) properties.clone();

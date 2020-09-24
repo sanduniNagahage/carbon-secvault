@@ -24,6 +24,7 @@ import org.wso2.securevault.secret.SecretRepository;
 import org.wso2.securevault.secret.SecretRepositoryProvider;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 
 public class HsmSecretRepositoryProvider implements SecretRepositoryProvider {
@@ -37,9 +38,9 @@ public class HsmSecretRepositoryProvider implements SecretRepositoryProvider {
     }
 
     @Override
-    public ArrayList<SecretRepository> initProvider(String[] externalRepositories, Properties configurationProperties,
-                                                    String key, IdentityKeyStoreWrapper identity,
-                                                    TrustKeyStoreWrapper trust) {
+    public HashMap<String, SecretRepository> initProvider(String[] externalRepositories, Properties configurationProperties,
+                                                          String key, IdentityKeyStoreWrapper identity,
+                                                          TrustKeyStoreWrapper trust) {
         Properties repositoryProperties;
         for (String externalRepo : externalRepositories){
             switch (externalRepo){
@@ -58,7 +59,7 @@ public class HsmSecretRepositoryProvider implements SecretRepositoryProvider {
                     break;
             }
         }
-        return hsmRepositoryArray;
+        return null;
     }
 
     @Override

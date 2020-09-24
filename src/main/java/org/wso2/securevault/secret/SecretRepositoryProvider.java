@@ -24,6 +24,7 @@ import org.wso2.securevault.secret.repository.Vault1SecretRepository;
 import org.wso2.securevault.secret.repository.Vault2SecretRepository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 
 /**
@@ -50,11 +51,11 @@ public interface SecretRepositoryProvider {
      * @param trust                   Trust KeyStore
      * @return A List of initialized SecretRepositories
      */
-    default ArrayList<SecretRepository> initProvider(String[] externalRepositories,
-                                                     Properties configurationProperties,
-                                                     String key,
-                                                     IdentityKeyStoreWrapper identity,
-                                                     TrustKeyStoreWrapper trust){ return null; }
+    default HashMap<String,SecretRepository> initProvider(String[] externalRepositories,
+                                                   Properties configurationProperties,
+                                                   String key,
+                                                   IdentityKeyStoreWrapper identity,
+                                                   TrustKeyStoreWrapper trust){ return null; }
 
     /**
      * Filter properties based on the provider and the repository
