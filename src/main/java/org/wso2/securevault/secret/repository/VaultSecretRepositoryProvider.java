@@ -18,7 +18,6 @@
 package org.wso2.securevault.secret.repository;
 
 
-import org.wso2.carbon.securevault.hashicorp.repository.HashiCorpSecretRepository;
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 import org.wso2.securevault.secret.SecretRepository;
@@ -27,7 +26,9 @@ import org.wso2.securevault.secret.SecretRepositoryProvider;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Properties;
+import java.util.ServiceLoader;
 
 public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
 
@@ -48,13 +49,18 @@ public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
                                                           TrustKeyStoreWrapper trust) {
 
         Properties repositoryProperties;
+
         for (String externalRepo : externalRepositories){
             repositoryProperties = filterConfigurations(configurationProperties,key,externalRepo);
-//            (new Vault2SecretRepository(identity, trust)).init(repositoryProperties);
-//            vaultRepositoryArrayItem = getSecretRepository(identity, trust);
-            vaultRepository = getVaultRepository(externalRepo,identity, trust);
-            vaultRepository.init(repositoryProperties,key);
-            vaultRepositoryMap.put(externalRepo,vaultRepository);
+
+            ServiceLoader<SecretRepository> loader = ServiceLoader.load(SecretRepository.class);
+
+            Iterator<SecretRepository> iterator = loader.iterator();
+            while(iterator.hasNext()){
+                vaultRepository = iterator.next();
+                vaultRepository.init(repositoryProperties,key);
+                vaultRepositoryMap.put(vaultRepository.getType(),vaultRepository);
+            }
         }
         return vaultRepositoryMap;
     }
@@ -78,15 +84,17 @@ public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
         @Override
     public SecretRepository getVaultRepository(String vaultRepository, IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
 
-        switch (vaultRepository){
-            case "vault1":
-                return new Vault1SecretRepository(identity, trust);
-            case "vault2":
-                return new Vault2SecretRepository(identity, trust);
-            case "hashicorp":
-                return new HashiCorpSecretRepository(identity, trust);
-            default:
-                return null;
-        }
+//        switch (vaultRepository){
+//            case "vault1":
+//                return new Vault1SecretRepository(identity, trust);
+//            case "vault2":
+//                return new Vault2SecretRepository(identity, trust);
+//            case "hashicorp":
+//                return new HashiCorpSecretRepository(identity, trust);
+//            default:
+//                return null;
+//        }
+
+            return null;
     }
 }

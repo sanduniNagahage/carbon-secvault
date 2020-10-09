@@ -112,6 +112,7 @@
             <artifactId>jline</artifactId>
             <version>${jline.version}</version>
         </dependency>
+
         <!-- direct dependencies for 3rd party JARs / Util JARs -->
         <dependency>
             <groupId>org.ops4j.pax.logging</groupId>
@@ -174,6 +175,11 @@
             <artifactId>org.wso2.carbon.securevault.hashicorp</artifactId>
             <version>1.0</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.example</groupId>-->
+<!--            <artifactId>XYZREPOOO</artifactId>-->
+<!--            <version>1.0-SNAPSHOT</version>-->
+<!--        </dependency>-->
     </dependencies>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
