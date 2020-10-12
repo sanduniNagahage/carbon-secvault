@@ -20,10 +20,7 @@ package org.wso2.securevault.secret;
 
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
-import org.wso2.securevault.secret.repository.Vault1SecretRepository;
-import org.wso2.securevault.secret.repository.Vault2SecretRepository;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 
@@ -47,15 +44,11 @@ public interface SecretRepositoryProvider {
      * @param externalRepositories    Repositories other than the file base
      * @param configurationProperties Properties from secret configurations file
      * @param key                     Provider type
-     * @param identity                Identity KeyStore
-     * @param trust                   Trust KeyStore
      * @return A List of initialized SecretRepositories
      */
     default HashMap<String,SecretRepository> initProvider(String[] externalRepositories,
                                                    Properties configurationProperties,
-                                                   String key,
-                                                   IdentityKeyStoreWrapper identity,
-                                                   TrustKeyStoreWrapper trust){ return null; }
+                                                   String key){ return null; }
 
     /**
      * Filter properties based on the provider and the repository
@@ -64,27 +57,6 @@ public interface SecretRepositoryProvider {
      * @param repository Repository string
      * @return filtered set of properties
      */
-    default Properties filterConfigurations(Properties properties, String provider, String repository){
-        String propertyString = "secretRepositories."+provider+".properties"+repository;
-        Properties filteredProps = new Properties();
-        filteredProps = (Properties) properties.clone();
-        Properties finalFilteredProps = filteredProps;
-        properties.forEach((k, v) ->{
-            if(!(k.toString().contains(propertyString))){
-                finalFilteredProps.remove(k);
-            }
+    default Properties filterConfigurations(Properties properties, String provider, String repository){ return null; }
 
-        });
-        return finalFilteredProps;
-    }
-
-    /**
-     *
-     * @param vaultRepository
-     * @param identity
-     * @param trust Trust KeyStore
-     * @return
-     */
-    default SecretRepository getVaultRepository(String vaultRepository, IdentityKeyStoreWrapper identity,
-                                                TrustKeyStoreWrapper trust) { return null; }
 }

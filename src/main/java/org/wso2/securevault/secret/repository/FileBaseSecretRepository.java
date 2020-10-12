@@ -133,7 +133,6 @@ public class FileBaseSecretRepository implements SecretRepository {
                 }
                 continue;
             }
-
             String decryptedText = new String(baseCipher.decrypt(encryptedText.trim().getBytes()));
             secrets.put(key, decryptedText);
         }

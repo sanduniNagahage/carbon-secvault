@@ -9,13 +9,13 @@
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on anh
+ * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.wso2.securevault.secret.repository;
+package org.wso2.securevault.secret.provider;
 
 
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
@@ -25,6 +25,7 @@ import org.wso2.securevault.secret.SecretRepositoryProvider;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
@@ -42,23 +43,18 @@ public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
     }
 
     @Override
-    public HashMap<String, SecretRepository> initProvider(String[] externalRepositories,
-                                                          Properties configurationProperties,
-                                                          String key,
-                                                          IdentityKeyStoreWrapper identity,
-                                                          TrustKeyStoreWrapper trust) {
-
+    public HashMap<String, SecretRepository> initProvider(String[] externalRepositoriesArr,
+                                                          Properties configurationProperties, String providerType) {
         Properties repositoryProperties;
+        ServiceLoader<SecretRepository> loader = ServiceLoader.load(SecretRepository.class);
+        Iterator<SecretRepository> iterator = loader.iterator();
 
-        for (String externalRepo : externalRepositories){
-            repositoryProperties = filterConfigurations(configurationProperties,key,externalRepo);
-
-            ServiceLoader<SecretRepository> loader = ServiceLoader.load(SecretRepository.class);
-
-            Iterator<SecretRepository> iterator = loader.iterator();
-            while(iterator.hasNext()){
-                vaultRepository = iterator.next();
-                vaultRepository.init(repositoryProperties,key);
+        while(iterator.hasNext()){
+            vaultRepository = iterator.next();
+            String repoType = vaultRepository.getType();
+            if (Arrays.stream(externalRepositoriesArr).anyMatch(repoType::equals)){
+                repositoryProperties = filterConfigurations(configurationProperties,providerType,repoType);
+                vaultRepository.init(repositoryProperties,providerType);
                 vaultRepositoryMap.put(vaultRepository.getType(),vaultRepository);
             }
         }
@@ -71,30 +67,11 @@ public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
         new Properties();
         Properties filteredProps;
         filteredProps = (Properties) properties.clone();
-        Properties finalFilteredProps = filteredProps;
         properties.forEach((k, v) ->{
             if(!(k.toString().contains(propertyString))){
-                finalFilteredProps.remove(k);
+                filteredProps.remove(k);
             }
-
         });
-        return finalFilteredProps;
-    }
-
-        @Override
-    public SecretRepository getVaultRepository(String vaultRepository, IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
-
-//        switch (vaultRepository){
-//            case "vault1":
-//                return new Vault1SecretRepository(identity, trust);
-//            case "vault2":
-//                return new Vault2SecretRepository(identity, trust);
-//            case "hashicorp":
-//                return new HashiCorpSecretRepository(identity, trust);
-//            default:
-//                return null;
-//        }
-
-            return null;
+        return filteredProps;
     }
 }

@@ -43,13 +43,6 @@ public interface SecretRepository {
     void init(Properties properties, String id);
 
     /**
-     * Initializes the repository based on provided properties
-     *
-     * @param properties Configuration properties
-     */
-    default void init(Properties properties){ }
-
-    /**
      * Returns the secret of provided alias name . An alias represents the logical name
      * for a look up secret
      *
