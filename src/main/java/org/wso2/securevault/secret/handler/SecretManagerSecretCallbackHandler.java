@@ -30,6 +30,8 @@ public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHa
 
     private final SecretManager secretManager = SecretManager.getInstance();
     private final static String DELIMITER = ":";
+    private final static String PROVIDER_FILE = "file";
+    private final static String REPOSITORY_FILEBASE = "filebase";
 
     protected void handleSingleSecretCallback(SingleSecretCallback singleSecretCallback) {
         String alias;
@@ -46,8 +48,8 @@ public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHa
         String secretAnnotation = singleSecretCallback.getId();
         String[] parts = secretAnnotation.split(DELIMITER);
         if (parts.length ==1){
-            provider = "file";
-            repository = "filebase";
+            provider = PROVIDER_FILE;
+            repository =REPOSITORY_FILEBASE ;
             alias = secretAnnotation;
         }else {
             provider = parts[0];
