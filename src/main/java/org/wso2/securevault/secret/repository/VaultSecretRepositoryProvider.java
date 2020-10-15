@@ -15,7 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.wso2.securevault.secret.provider;
+package org.wso2.securevault.secret.repository;
 
 
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
@@ -47,15 +47,14 @@ public class VaultSecretRepositoryProvider implements SecretRepositoryProvider {
                                                           Properties configurationProperties, String providerType) {
         Properties repositoryProperties;
         ServiceLoader<SecretRepository> loader = ServiceLoader.load(SecretRepository.class);
-        Iterator<SecretRepository> iterator = loader.iterator();
 
-        while(iterator.hasNext()){
-            vaultRepository = iterator.next();
+        for (SecretRepository secretRepository : loader) {
+            vaultRepository = secretRepository;
             String repoType = vaultRepository.getType();
-            if (Arrays.stream(externalRepositoriesArr).anyMatch(repoType::equals)){
-                repositoryProperties = filterConfigurations(configurationProperties,providerType,repoType);
-                vaultRepository.init(repositoryProperties,providerType);
-                vaultRepositoryMap.put(vaultRepository.getType(),vaultRepository);
+            if (Arrays.asList(externalRepositoriesArr).contains(repoType)) {
+                repositoryProperties = filterConfigurations(configurationProperties, providerType, repoType);
+                vaultRepository.init(repositoryProperties, providerType);
+                vaultRepositoryMap.put(vaultRepository.getType(), vaultRepository);
             }
         }
         return vaultRepositoryMap;

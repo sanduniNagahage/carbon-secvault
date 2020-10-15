@@ -48,7 +48,10 @@ public interface SecretRepositoryProvider {
      */
     default HashMap<String,SecretRepository> initProvider(String[] externalRepositories,
                                                    Properties configurationProperties,
-                                                   String key){ return null; }
+                                                   String key){
+
+        return new HashMap<>();
+    }
 
     /**
      * Filter properties based on the provider and the repository
@@ -57,6 +60,8 @@ public interface SecretRepositoryProvider {
      * @param repository Repository string
      * @return filtered set of properties
      */
-    default Properties filterConfigurations(Properties properties, String provider, String repository){ return null; }
+    default Properties filterConfigurations(Properties properties, String provider, String repository){
+        return new Properties();
+    }
 
 }
