@@ -1,4 +1,21 @@
 
+/*
+ * Copyright (c) 2020, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.wso2.securevault.secret;
 
 import org.apache.commons.logging.Log;
@@ -14,6 +31,7 @@ import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
 import java.util.Properties;
 
 /**
@@ -49,7 +67,6 @@ public class SecretManager {
     private final static String PROP_SECRET_PROVIDER="carbon.secretProvider";
 
 
-
     /* Property key for secretRepositoryProviders*/
     private final static String PROP_SECRET_PROVIDERS = "secretRepositoryProviders";
     //get all the vault repositories to a Hash Map
@@ -62,6 +79,7 @@ public class SecretManager {
     Boolean providerExists = true;
     String[] repositories;
     String[] externalProviders;
+
 
     public static SecretManager getInstance() {
         return SECRET_MANAGER;
@@ -140,6 +158,7 @@ public class SecretManager {
             }
             return;
         }
+
 
         if ( repoExists ){
             repositories = repositoriesString.split(",");
@@ -252,6 +271,7 @@ public class SecretManager {
                 Object instance = aClass.newInstance();
 
                 if (instance instanceof SecretRepositoryProvider) {
+
                     if (key.contains(SECRET_REPOSITORY_PROVIDER)) {
                         String externalRepositoriesString = MiscellaneousUtil.getProperty(
                                 configurationProperties, value + PROP_SECRET_REPOSITORIES, null);
@@ -287,6 +307,7 @@ public class SecretManager {
                         }
                         secretRepository.setParent(currentParent);
                         currentParent = secretRepository;
+
                         if (log.isDebugEnabled()) {
                             log.debug("Successfully Initiate a Secret Repository provided by : "
                                     + provider);
