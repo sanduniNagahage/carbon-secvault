@@ -20,8 +20,9 @@ package org.wso2.securevault.secret;
 
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
-import org.wso2.securevault.secret.repository.Vault1SecretRepository;
-import org.wso2.securevault.secret.repository.Vault2SecretRepository;
+import java.util.HashMap;
+import java.util.Properties;
+
 
 /**
  * Factory method for creating a instance of a SecretRepository
@@ -35,14 +36,33 @@ public interface SecretRepositoryProvider {
      * @param trust    Trust KeyStore
      * @return A SecretRepository implementation
      */
-    public SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust);
+  
+    SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust);
 
-    default public SecretRepository getVaultRepository(String vaultRepository,IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust) {
+    /**
+     * Returns a List of initialized SecretRepositories
+     *
+     * @param externalRepositories    Repositories other than the file base
+     * @param configurationProperties Properties from secret configurations file
+     * @param key                     Provider type
+     * @return A List of initialized SecretRepositories
+     */
+    default HashMap<String,SecretRepository> initProvider(String[] externalRepositories,
+                                                   Properties configurationProperties,
+                                                   String key){
 
-        if(vaultRepository == "vault1"){
-            return new Vault1SecretRepository(identity, trust);
-        } else{
-            return new Vault2SecretRepository(identity, trust);
-        }
+        return new HashMap<>();
     }
+
+    /**
+     * Filter properties based on the provider and the repository
+     * @param properties Properties from secret configurations file
+     * @param provider   Provider string
+     * @param repository Repository string
+     * @return filtered set of properties
+     */
+    default Properties filterConfigurations(Properties properties, String provider, String repository){
+        return new Properties();
+    }
+
 }

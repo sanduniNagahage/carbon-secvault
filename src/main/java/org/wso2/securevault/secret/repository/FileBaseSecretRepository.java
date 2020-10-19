@@ -32,8 +32,10 @@ import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 import org.wso2.securevault.secret.SecretRepository;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Holds all secrets in a file
@@ -53,7 +55,8 @@ public class FileBaseSecretRepository implements SecretRepository {
     /* Parent secret repository */
     private SecretRepository parentRepository;
     /*Map of secrets keyed by alias for property name */
-    private final Map<String, String> secrets = new HashMap<>();
+//    private final Map<String, String> secrets = new HashMap<>();
+    private  Map<String, String> secrets = new HashMap<>();
     /*Map of encrypted values keyed by alias for property name */
     private final Map<String, String> encryptedData = new HashMap<>();
     /*Wrapper for Identity KeyStore */
@@ -130,10 +133,10 @@ public class FileBaseSecretRepository implements SecretRepository {
                 }
                 continue;
             }
-
             String decryptedText = new String(baseCipher.decrypt(encryptedText.trim().getBytes()));
             secrets.put(key, decryptedText);
         }
+
         initialize = true;
     }
 

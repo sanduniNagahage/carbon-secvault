@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2020, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
@@ -27,7 +28,10 @@ import org.wso2.securevault.definition.TrustKeyStoreInformation;
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 import java.util.Properties;
 
 /**
@@ -62,12 +66,20 @@ public class SecretManager {
     // property key for global secret provider
     private final static String PROP_SECRET_PROVIDER="carbon.secretProvider";
 
-    /*property key for vaultSecretRepositories*/
-    private final static String PROP_VAULT_SECRET_REPOSITORIES = "vaultSecretRepositories";
-    /*get all the vault repositories to an array */
-    ArrayList<SecretRepository> vaultRepositoryArray = new ArrayList<>();
-    /*single vault secret repository*/
-    SecretRepository vaultRepositoryArrayItem;
+
+    /* Property key for secretRepositoryProviders*/
+    private final static String PROP_SECRET_PROVIDERS = "secretRepositoryProviders";
+    //get all the vault repositories to a Hash Map
+    HashMap<String,SecretRepository> allExternalRepositories = new HashMap<>();
+    private final static int STARTING_VALUE = 1;
+    private final static String SECRET_REPOSITORY = "secretRepository";
+    private final static String SECRET_REPOSITORY_PROVIDER = "secretRepositoryProvider";
+    HashMap<String,String> allProviders = new HashMap<>();
+    Boolean repoExists = true;
+    Boolean providerExists = true;
+    String[] repositories;
+    String[] externalProviders;
+
 
     public static SecretManager getInstance() {
         return SECRET_MANAGER;
@@ -124,36 +136,63 @@ public class SecretManager {
 
         String repositoriesString = MiscellaneousUtil.getProperty(
                 configurationProperties, PROP_SECRET_REPOSITORIES, null);
-        if (repositoriesString == null || "".equals(repositoriesString)) {
+        if ((repositoriesString == null || "".equals(repositoriesString))){
+            if (log.isDebugEnabled()) {
+                log.debug("No secret repositories have been configured");
+            }
+            repoExists = false;
+        }
+
+        String externalProviderString = MiscellaneousUtil.getProperty(
+                configurationProperties, PROP_SECRET_PROVIDERS, null);
+        if ((externalProviderString == null || "".equals(externalProviderString))){
+            if (log.isDebugEnabled()) {
+                log.debug("No external secret repositories have been configured");
+            }
+            providerExists = false;
+        }
+
+        if ( !(repoExists || providerExists)){
             if (log.isDebugEnabled()) {
                 log.debug("No secret repositories have been configured");
             }
             return;
         }
 
-        String[] repositories = repositoriesString.split(",");
-        if (repositories == null || repositories.length == 0) {
+
+        if ( repoExists ){
+            repositories = repositoriesString.split(",");
+            if (repositories == null || repositories.length == 0 ){
+                if (log.isDebugEnabled()) {
+                    log.debug("No secret repositories have been configured");
+                }
+                repoExists = false;
+            }
+            int repoCounter = STARTING_VALUE;
+            for(String repo : repositories){
+                allProviders.put(SECRET_REPOSITORY+repoCounter,repo);
+                repoCounter++;
+            }
+        }
+
+        if( providerExists ){
+            externalProviders = externalProviderString.split(",");
+            if (externalProviders == null || externalProviders.length == 0) {
+                if (log.isDebugEnabled()) {
+                    log.debug("No external secret repositories have been configured");
+                }
+                providerExists = false;
+            }
+            int extProviderCounter = STARTING_VALUE;
+            for(String extProvider : externalProviders){
+                allProviders.put(SECRET_REPOSITORY_PROVIDER+extProviderCounter,extProvider);
+                extProviderCounter++;
+            }
+        }
+
+        if (!(repoExists || providerExists) ) {
             if (log.isDebugEnabled()) {
                 log.debug("No secret repositories have been configured");
-            }
-            return;
-        }
-
-        /* vaultSecretRepositories=vault1,vault2 */
-        String vaultRepositoriesString = MiscellaneousUtil.getProperty(
-                configurationProperties, PROP_VAULT_SECRET_REPOSITORIES, null);
-        if (vaultRepositoriesString == null || "".equals(vaultRepositoriesString)){
-            if(log.isDebugEnabled()){
-                log.debug("No vault repositories have been configured");
-            }
-            return;
-        }
-
-        /* add vaultRepositoriesString to an array */
-        String[] vaultRepositories = vaultRepositoriesString.split(",");
-        if (vaultRepositories == null || vaultRepositories.length == 0){
-            if(log.isDebugEnabled()){
-                log.debug("No vault repositories have been configured");
             }
             return;
         }
@@ -195,16 +234,23 @@ public class SecretManager {
 
         TrustKeyStoreWrapper trustKeyStoreWrapper = new TrustKeyStoreWrapper();
         if(trustInformation != null){
-            trustKeyStoreWrapper.init(trustInformation);            
+            trustKeyStoreWrapper.init(trustInformation);
         }
 
         SecretRepository currentParent = null;
-        for (String secretRepo : repositories) {
+        for(Map.Entry singleProvider : allProviders.entrySet()){
+            String key = (String) singleProvider.getKey();
+            String value = (String) singleProvider.getValue();
 
             StringBuffer sb = new StringBuffer();
-            sb.append(PROP_SECRET_REPOSITORIES);
+            if (key.contains(SECRET_REPOSITORY_PROVIDER)){
+                sb.append(PROP_SECRET_PROVIDERS);
+
+            }else{
+                sb.append(PROP_SECRET_REPOSITORIES);
+            }
             sb.append(DOT);
-            sb.append(secretRepo);
+            sb.append(value);
             String id = sb.toString();
             sb.append(DOT);
             sb.append(PROP_PROVIDER);
@@ -216,7 +262,7 @@ public class SecretManager {
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("Initiating a File Based Secret Repository");
+                log.debug("Initiating a Secret Repository");
             }
 
             try {
@@ -226,19 +272,33 @@ public class SecretManager {
 
                 if (instance instanceof SecretRepositoryProvider) {
 
-                    /*$secret{vault:vault1:alias} --> vault-provider*/
-                    String providerVault = "vault";
-                    if(secretRepo.equals(providerVault)){
-
-                        /*$secret{vault:vault1:alias} --> vault1-repository*/
-                        //String vaultRepository = "vault1";
-
-                        for(String vaultRepo : vaultRepositories){
-                            vaultRepositoryArrayItem = ((SecretRepositoryProvider) instance).getVaultRepository(vaultRepo, identityKeyStoreWrapper, trustKeyStoreWrapper);
-                            vaultRepositoryArrayItem.init(configurationProperties,id);
-                            vaultRepositoryArray.add(vaultRepositoryArrayItem);
+                    if (key.contains(SECRET_REPOSITORY_PROVIDER)) {
+                        String externalRepositoriesString = MiscellaneousUtil.getProperty(
+                                configurationProperties, value + PROP_SECRET_REPOSITORIES, null);
+                        if (externalRepositoriesString == null || "".equals(externalRepositoriesString)) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("No repositories have been configured");
+                            }
+                            return;
                         }
-                    }else{
+
+                        String[] externalRepositoriesArr = externalRepositoriesString.split(",");
+                        if (externalRepositoriesArr == null || externalRepositoriesArr.length == 0) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("No repositories have been configured");
+                            }
+                            return;
+                        }
+                        allExternalRepositories =
+                                ((SecretRepositoryProvider) instance).initProvider(externalRepositoriesArr,
+                                        configurationProperties, value);
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Successfully Initiate a Secret Repository provided by : "
+                                    + provider);
+                        }
+
+                    } else{
                         SecretRepository secretRepository = ((SecretRepositoryProvider) instance).
                                 getSecretRepository(identityKeyStoreWrapper, trustKeyStoreWrapper);
                         secretRepository.init(configurationProperties, id);
@@ -247,14 +307,16 @@ public class SecretManager {
                         }
                         secretRepository.setParent(currentParent);
                         currentParent = secretRepository;
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Successfully Initiate a Secret Repository provided by : "
+                                    + provider);
+                        }
+
                     }
-                    if (log.isDebugEnabled()) {
-                        log.debug("Successfully Initiate a Secret Repository provided by : "
+                }else {
+                        handleException("Invalid class as SecretRepositoryProvider : Class Name : "
                                 + provider);
-                    }
-                } else {
-                    handleException("Invalid class as SecretRepositoryProvider : Class Name : "
-                            + provider);
                 }
 
             } catch (ClassNotFoundException e) {
@@ -264,25 +326,36 @@ public class SecretManager {
             } catch (InstantiationException e) {
                 handleException("Error creating a instance from class : " + provider);
             }
-        }
 
+        }
         initialized = true;
     }
 
     /**
-     * Returns the secret corresponding to the given alias name
      *
-     * @param alias The logical or alias name
+     * @param provider   provider type
+     * @param repository repository type
+     * @param alias      alias to be resolved
      * @return If there is a secret , otherwise , alias itself
      */
-    public String getSecret(String alias) {
-        if (!initialized || parentRepository == null) {
-            if (log.isDebugEnabled()) {
-                log.debug("There is no secret repository. Returning alias itself");
+    public String getSecret(String provider,String repository,String alias) {
+        if (allProviders.containsValue(provider)) {
+            if (allExternalRepositories.containsKey(repository)){
+                return allExternalRepositories.get(repository).getSecret(alias);
+
+            }else{
+                if (!initialized || parentRepository == null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("There is no secret repository. Returning alias itself");
+                    }
+                    return alias;
+                }
+                return parentRepository.getSecret(alias);
             }
-            return alias;
+        } else if (log.isDebugEnabled()){
+            log.debug("No such secret repository provider listed under configurations" );
         }
-        return parentRepository.getSecret(alias);
+        return null;
     }
 
     /**
