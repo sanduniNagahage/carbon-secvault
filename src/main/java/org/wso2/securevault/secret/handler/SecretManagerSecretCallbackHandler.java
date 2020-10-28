@@ -29,14 +29,8 @@ import org.wso2.securevault.secret.SingleSecretCallback;
 public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHandler {
 
     private final SecretManager secretManager = SecretManager.getInstance();
-    private final static String DELIMITER = ":";
-    private final static String PROVIDER_FILE = "file";
-    private final static String REPOSITORY_FILEBASE = "filebase";
 
     protected void handleSingleSecretCallback(SingleSecretCallback singleSecretCallback) {
-        String alias;
-        String provider = null;
-        String repository = null;
 
         if (!secretManager.isInitialized()) {
             if (log.isWarnEnabled()) {
@@ -46,19 +40,8 @@ public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHa
         }
 
         String secretAnnotation = singleSecretCallback.getId();
-        String[] parts = secretAnnotation.split(DELIMITER);
-        if (parts.length ==1){
-            provider = PROVIDER_FILE;
-            repository =REPOSITORY_FILEBASE ;
-            alias = secretAnnotation;
-        }else {
-            provider = parts[0];
-            repository = parts[1];
-            alias = parts[2];
-        }
-
         if (secretAnnotation != null && !"".equals(secretAnnotation)) {
-            singleSecretCallback.setSecret(secretManager.getSecret(provider,repository,alias));
+            singleSecretCallback.setSecret(secretManager.checker(secretAnnotation));
         }
     }
 }

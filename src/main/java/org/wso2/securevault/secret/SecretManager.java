@@ -36,6 +36,18 @@ public class SecretManager {
     private final static String PROP_PROVIDER = "provider";
     /* Dot string */
     private final static String DOT = ".";
+    /* Property key for secretRepositoryProviders */
+    private final static String PROP_SECRET_PROVIDERS = "secretRepositoryProviders";
+    /* To amend to the key name of the allProviders map when adding multiple providers */
+    private final static int STARTING_VALUE = 1;
+    /* To amend to the key name of the allProviders map when adding providers which are under secretRepository
+    properties */
+    private final static String SECRET_REPOSITORY = "secretRepository";
+    /* To amend to the key name of the allProviders map when adding providers which are under secretRepositoryProviders
+    properties */
+    private final static String SECRET_REPOSITORY_PROVIDER = "secretRepositoryProvider";
+    /* to split the secret annotation */
+    private final static String DELIMITER = ":";
 
     /*Root Secret Repository */
     private SecretRepository parentRepository;
@@ -48,20 +60,23 @@ public class SecretManager {
     // property key for global secret provider
     private final static String PROP_SECRET_PROVIDER="carbon.secretProvider";
 
-
-
-    /* Property key for secretRepositoryProviders*/
-    private final static String PROP_SECRET_PROVIDERS = "secretRepositoryProviders";
-    //get all the vault repositories to a Hash Map
-    HashMap<String,SecretRepository> allExternalRepositories = new HashMap<>();
-    private final static int STARTING_VALUE = 1;
-    private final static String SECRET_REPOSITORY = "secretRepository";
-    private final static String SECRET_REPOSITORY_PROVIDER = "secretRepositoryProvider";
+    /* get all the vault repository providers to a Hash Map */
     HashMap<String,String> allProviders = new HashMap<>();
-    Boolean repoExists = true;
-    Boolean providerExists = true;
-    String[] repositories;
-    String[] externalProviders;
+    /* get all the vault repositories to a Hash Map */
+    HashMap<String,SecretRepository> allExternalRepositories = new HashMap<>();
+
+    /* Branch out to existing securevault implementation */
+    private Boolean repoExists = true;
+    /* Branch out to new implementation of the securevault */
+    private Boolean providerExists = true;
+    /* To get the repositories listed under secretRepositories property */
+    private String[] repositories;
+    /* To get the providers listed under secretRepositoryProviders property */
+    private String[] externalProviders;
+    /* Key from set of the keys of allProviders Hashmap */
+    private String allProviderKey;
+    /* Value from set of the values of allProviders Hashmap */
+    private String allProviderValue;
 
     public static SecretManager getInstance() {
         return SECRET_MANAGER;
@@ -178,60 +193,65 @@ public class SecretManager {
             return;
         }
 
-        //Create a KeyStore Information  for private key entry KeyStore
-        IdentityKeyStoreInformation identityInformation =
-                KeyStoreInformationFactory.createIdentityKeyStoreInformation(properties);
+        IdentityKeyStoreWrapper identityKeyStoreWrapper = null;
+        TrustKeyStoreWrapper trustKeyStoreWrapper = null;
+        if (repoExists){
+            //Create a KeyStore Information  for private key entry KeyStore
+            IdentityKeyStoreInformation identityInformation =
+                    KeyStoreInformationFactory.createIdentityKeyStoreInformation(properties);
 
-        // Create a KeyStore Information for trusted certificate KeyStore
-        TrustKeyStoreInformation trustInformation =
-                KeyStoreInformationFactory.createTrustKeyStoreInformation(properties);
+            // Create a KeyStore Information for trusted certificate KeyStore
+            TrustKeyStoreInformation trustInformation =
+                    KeyStoreInformationFactory.createTrustKeyStoreInformation(properties);
 
-        String identityKeyPass = null;
-        String identityStorePass = null;
-        String trustStorePass = null;
-        if(identityInformation != null){
-            identityKeyPass = identityInformation
-                    .getKeyPasswordProvider().getResolvedSecret();
-            identityStorePass = identityInformation
-                    .getKeyStorePasswordProvider().getResolvedSecret();
-        }
-
-        if(trustInformation != null){
-            trustStorePass = trustInformation
-                .getKeyStorePasswordProvider().getResolvedSecret();
-        }
-
-
-        if (!validatePasswords(identityStorePass, identityKeyPass, trustStorePass)) {
-            if (log.isDebugEnabled()) {
-                log.info("Either Identity or Trust keystore password is mandatory" +
-                        " in order to initialized secret manager.");
+            String identityKeyPass = null;
+            String identityStorePass = null;
+            String trustStorePass = null;
+            if(identityInformation != null){
+                identityKeyPass = identityInformation
+                        .getKeyPasswordProvider().getResolvedSecret();
+                identityStorePass = identityInformation
+                        .getKeyStorePasswordProvider().getResolvedSecret();
             }
-            return;
-        }
 
-        IdentityKeyStoreWrapper identityKeyStoreWrapper = new IdentityKeyStoreWrapper();
-        identityKeyStoreWrapper.init(identityInformation, identityKeyPass);
+            if(trustInformation != null){
+                trustStorePass = trustInformation
+                        .getKeyStorePasswordProvider().getResolvedSecret();
+            }
 
-        TrustKeyStoreWrapper trustKeyStoreWrapper = new TrustKeyStoreWrapper();
-        if(trustInformation != null){
-            trustKeyStoreWrapper.init(trustInformation);
+
+            if (!validatePasswords(identityStorePass, identityKeyPass, trustStorePass)) {
+                if (log.isDebugEnabled()) {
+                    log.info("Either Identity or Trust keystore password is mandatory" +
+                            " in order to initialized secret manager.");
+                }
+                return;
+            }
+
+            identityKeyStoreWrapper = new IdentityKeyStoreWrapper();
+            identityKeyStoreWrapper.init(identityInformation, identityKeyPass);
+
+            trustKeyStoreWrapper = new TrustKeyStoreWrapper();
+            if(trustInformation != null){
+                trustKeyStoreWrapper.init(trustInformation);
+            }
+
         }
 
         SecretRepository currentParent = null;
         for(Map.Entry singleProvider : allProviders.entrySet()){
-            String key = (String) singleProvider.getKey();
-            String value = (String) singleProvider.getValue();
+            allProviderKey = (String) singleProvider.getKey();
+            allProviderValue = (String) singleProvider.getValue();
 
             StringBuffer sb = new StringBuffer();
-            if (key.contains(SECRET_REPOSITORY_PROVIDER)){
+            if (allProviderKey.contains(SECRET_REPOSITORY_PROVIDER)){
                 sb.append(PROP_SECRET_PROVIDERS);
 
             }else{
                 sb.append(PROP_SECRET_REPOSITORIES);
             }
             sb.append(DOT);
-            sb.append(value);
+            sb.append(allProviderValue);
             String id = sb.toString();
             sb.append(DOT);
             sb.append(PROP_PROVIDER);
@@ -252,9 +272,9 @@ public class SecretManager {
                 Object instance = aClass.newInstance();
 
                 if (instance instanceof SecretRepositoryProvider) {
-                    if (key.contains(SECRET_REPOSITORY_PROVIDER)) {
+                    if (allProviderKey.contains(SECRET_REPOSITORY_PROVIDER)) {
                         String externalRepositoriesString = MiscellaneousUtil.getProperty(
-                                configurationProperties, value + PROP_SECRET_REPOSITORIES, null);
+                                configurationProperties, allProviderValue + PROP_SECRET_REPOSITORIES, null);
                         if (externalRepositoriesString == null || "".equals(externalRepositoriesString)) {
                             if (log.isDebugEnabled()) {
                                 log.debug("No repositories have been configured");
@@ -271,7 +291,7 @@ public class SecretManager {
                         }
                         allExternalRepositories =
                                 ((SecretRepositoryProvider) instance).initProvider(externalRepositoriesArr,
-                                        configurationProperties, value);
+                                        configurationProperties, allProviderValue);
 
                         if (log.isDebugEnabled()) {
                             log.debug("Successfully Initiate a Secret Repository provided by : "
@@ -312,17 +332,10 @@ public class SecretManager {
 
     /**
      *
-     * @param provider   provider type
-     * @param repository repository type
      * @param alias      alias to be resolved
      * @return If there is a secret , otherwise , alias itself
      */
-    public String getSecret(String provider,String repository,String alias) {
-        if (allProviders.containsValue(provider)) {
-            if (allExternalRepositories.containsKey(repository)){
-                return allExternalRepositories.get(repository).getSecret(alias);
-
-            }else{
+    public String getSecret(String alias) {
                 if (!initialized || parentRepository == null) {
                     if (log.isDebugEnabled()) {
                         log.debug("There is no secret repository. Returning alias itself");
@@ -331,10 +344,51 @@ public class SecretManager {
                 }
                 return parentRepository.getSecret(alias);
             }
-        } else if (log.isDebugEnabled()){
-            log.debug("No such secret repository provider listed under configurations" );
+
+    /**
+     *
+     * @param provider   provider type
+     * @param repository repository type
+     * @param alias      alias to be resolved
+     * @return If there is a secret , otherwise , alias itself
+     */
+    private String getSecret(String provider,String repository,String alias) {
+        if (allProviders.containsValue(provider) && allExternalRepositories.containsKey(repository)){
+            return allExternalRepositories.get(repository).getSecret(alias);
         }
-        return null;
+        if (log.isDebugEnabled()) {
+            log.debug("No such secret repository listed under configurations");
+        }
+        return alias;
+
+    }
+
+    /**
+     *
+     * @param secretAnnotation String contains the alias, the provider type and the repository type
+     * @return plain text value for the required secret
+     */
+    public String checker( String secretAnnotation ){
+        String provider, repository, alias;
+
+        String[] parts = secretAnnotation.split(DELIMITER);
+        if (parts.length ==1){
+            if (repoExists){
+                return getSecret(secretAnnotation);
+            }else{
+                provider = allProviderValue;
+                repository = (String) allExternalRepositories.keySet().toArray()[0];
+                alias = secretAnnotation;
+
+                return getSecret(provider,repository,alias);
+            }
+        }else {
+            provider = parts[0];
+            repository = parts[1];
+            alias = parts[2];
+
+            return getSecret(provider,repository,alias);
+        }
     }
 
     /**
