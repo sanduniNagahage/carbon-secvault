@@ -20,9 +20,9 @@ package org.wso2.securevault.secret;
 
 import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
-
 import java.util.HashMap;
 import java.util.Properties;
+
 
 /**
  * Factory method for creating a instance of a SecretRepository
@@ -36,6 +36,7 @@ public interface SecretRepositoryProvider {
      * @param trust    Trust KeyStore
      * @return A SecretRepository implementation
      */
+  
     SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust);
 
     /**
