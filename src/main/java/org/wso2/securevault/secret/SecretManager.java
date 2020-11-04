@@ -267,7 +267,7 @@ public class SecretManager {
             return secretRepositories.get(repository).getSecret(alias);
         }
         if (log.isDebugEnabled()) {
-            log.debug("No such secret repository listed under configurations");
+            log.debug("No such secret repository listed under configurations.");
         }
         return alias;
     }
