@@ -380,7 +380,7 @@ public class SecretManager {
 
         if (!(isLegacyProvidersExists || isNovelProvidersExists)) {
             if (log.isDebugEnabled()) {
-                log.debug("No secret repositories have been configured");
+                log.debug("No secret repositories have been configured.");
             }
             return;
         }
