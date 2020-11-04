@@ -228,7 +228,7 @@ public class SecretManager {
                 case 3:
                     return getSecret(annotation[0], annotation[1], annotation[2]);
                 default:
-                    throw new IllegalArgumentException("invalid annotation");
+                    throw new IllegalArgumentException("Invalid annotation.");
             }
         } catch (NullPointerException e) {
             handleException("No Secret Repositories have been initialized : ");
