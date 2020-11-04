@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Entry point for manage secrets
+ * Entry point for manage secrets.
  */
 public class SecretManager {
 
@@ -27,40 +27,40 @@ public class SecretManager {
 
     private final static SecretManager SECRET_MANAGER = new SecretManager();
 
-    /* Default configuration file path for secret manager*/
+    /* Default configuration file path for secret manager. */
     private final static String PROP_DEFAULT_CONF_LOCATION = "secret-manager.properties";
-    /* If the location of the secret manager configuration is provided as a property- it's name */
+    /* If the location of the secret manager configuration is provided as a property- it's name. */
     private final static String PROP_SECRET_MANAGER_CONF = "secret.manager.conf";
-    /* Property key for secretRepositories*/
+    /* Property key for secretRepositories. */
     private final static String PROP_SECRET_REPOSITORIES = "secretRepositories";
     private final static String PROP_SECRET_MANAGER_ENABLED = "secVault.enabled";
-    /* Type of the secret repository */
+    /* Type of the secret repository. */
     private final static String PROP_PROVIDER = "provider";
-    /* Dot string */
+    /* Dot string. */
     private final static String DOT = ".";
-    /* Property key for secretProviders */
+    /* Property key for secretProviders. */
     private final static String PROP_SECRET_PROVIDERS = "secretProviders";
-    /* Delimiter string */
+    /* Delimiter string. */
     private final static String DELIMITER = ":";
 
-    /*Root Secret Repository */
+    /*Root Secret Repository. */
     private SecretRepository parentRepository;
     /* True , if secret manage has been started up properly- need to have a at
-    least one Secret Repository*/
+    least one Secret Repository. */
     private boolean initialized = false;
-    /* True if the property secretRepositories configured */
+    /* True if the property secretRepositories configured. */
     private boolean isLegacyProvidersExists = false;
-    /* True if the property secretProviders configured */
+    /* True if the property secretProviders configured. */
     private boolean isNovelProvidersExists = false;
 
-    // global password provider implementation class if defined in secret manager conf file
+    // global password provider implementation class if defined in secret manager conf file.
     private String globalSecretProvider =null;
-    // property key for global secret provider
+    // property key for global secret provider.
     private final static String PROP_SECRET_PROVIDER="carbon.secretProvider";
 
-    /* Hash map to keep the providers listed under secretRepositories and secretProviders property */
+    /* Hash map to keep the providers listed under secretRepositories and secretProviders property. */
     private HashMap<String, String> providers = new HashMap<>();
-    /* Hash map to keep the secret repositories coming from a provider listed under secretProviders property */
+    /* Hash map to keep the secret repositories coming from a provider listed under secretProviders property. */
     private HashMap<String, SecretRepository> secretRepositories = new HashMap<>();
 
     public static SecretManager getInstance() {
@@ -71,9 +71,9 @@ public class SecretManager {
     }
 
     /**
-     * Initializes the Secret Manager by providing configuration properties
+     * Initializes the Secret Manager by providing configuration properties.
      *
-     * @param properties Configuration properties
+     * @param properties Configuration properties.
      */
     public void init(Properties properties) {
 
@@ -86,7 +86,7 @@ public class SecretManager {
 
         if (properties == null) {
             if (log.isDebugEnabled()) {
-                log.debug("KeyStore configuration properties cannot be found");
+                log.debug("KeyStore configuration properties cannot be found.");
             }
             return;
         }
@@ -98,7 +98,7 @@ public class SecretManager {
         if (configurationProperties == null || configurationProperties.isEmpty()) {
             if (log.isDebugEnabled()) {
                 log.debug("Configuration properties can not be loaded form : " +
-                        configurationFile + " Will use synapse properties");
+                        configurationFile + " Will use synapse properties.");
             }
             configurationProperties = properties;
 
@@ -129,7 +129,7 @@ public class SecretManager {
         SecretRepository currentParent = null;
         for (Map.Entry singleProvider : providers.entrySet()) {
             String providerType = (String) singleProvider.getKey();         //file,vault,hsm etc.
-            String propertyName = (String) singleProvider.getValue();  //secretRepositories and secretProviders
+            String propertyName = (String) singleProvider.getValue();  //secretRepositories and secretProviders.
 
             StringBuilder sb = new StringBuilder();
             sb.append(propertyName);
@@ -142,11 +142,11 @@ public class SecretManager {
             String provider = MiscellaneousUtil.getProperty(
                     configurationProperties, sb.toString(), null);
             if (provider == null || "".equals(provider)) {
-                handleException("Repository provider cannot be null ");
+                handleException("Repository provider cannot be null.");
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("Initiating a Secret Repository");
+                log.debug("Initiating a Secret Repository.");
             }
 
             try {
@@ -193,10 +193,10 @@ public class SecretManager {
 
     /**
      * Check whether to use the provider listed under secretRepositories
-     * or secretProviders property for resolving secrets
+     * or secretProviders property for resolving secrets.
      *
-     * @param secretAnnotation String contains the alias, the provider type and the repository type
-     * @return plain text value for the required secret
+     * @param secretAnnotation String contains the alias, the provider type and the repository type.
+     * @return plain text value for the required secret.
      */
     public String resolveSecret(String secretAnnotation) {
 
@@ -211,10 +211,10 @@ public class SecretManager {
 
     /**
      * Resolve the secret annotation for the secrets coming from
-     * repositories belongs to providers listed under secretProviders property
+     * repositories belongs to providers listed under secretProviders property.
      *
-     * @param annotation vaule retrieve by the resolveSecret as the value to be resolved
-     * @return If there is a secret , otherwise , alias itself
+     * @param annotation vaule retrieve by the resolveSecret as the value to be resolved.
+     * @return If there is a secret , otherwise , alias itself.
      */
     public String resolveSecret(String[] annotation) {
 
@@ -237,15 +237,15 @@ public class SecretManager {
     }
 
     /**
-     * Returns the secret corresponding to the given alias name
+     * Returns the secret corresponding to the given alias name.
      *
-     * @param alias The logical or alias name
-     * @return If there is a secret , otherwise , alias itself
+     * @param alias The logical or alias name.
+     * @return If there is a secret , otherwise , alias itself.
      */
     public String getSecret(String alias) {
         if (!initialized || parentRepository == null) {
             if (log.isDebugEnabled()) {
-                log.debug("There is no secret repository. Returning alias itself");
+                log.debug("There is no secret repository. Returning alias itself.");
             }
             return alias;
         }
@@ -253,13 +253,13 @@ public class SecretManager {
     }
 
     /**
-     * Returns the encrypted value corresponding to the given secretAnnotation name where
-     * secretAnnotation consists of provider type, repository type and the alias
+     * Returns the encrypted value corresponding to the given secretAnnotation name where.
+     * secretAnnotation consists of provider type, repository type and the alias.
      *
-     * @param provider   provider type
-     * @param repository repository type
-     * @param alias      alias to be resolved
-     * @return If there is a secret , otherwise , alias itself
+     * @param provider   provider type.
+     * @param repository repository type.
+     * @param alias      alias to be resolved.
+     * @return If there is a secret , otherwise , alias itself.
      */
     public String getSecret(String provider, String repository, String alias) {
 
@@ -274,15 +274,15 @@ public class SecretManager {
 
 
     /**
-     * Returns the encrypted value corresponding to the given alias name
+     * Returns the encrypted value corresponding to the given alias name.
      *
-     * @param alias The logical or alias name
-     * @return If there is a encrypted value , otherwise , alias itself
+     * @param alias The logical or alias name.
+     * @return If there is a encrypted value , otherwise , alias itself.
      */
     public String getEncryptedData(String alias) {
         if (!initialized || parentRepository == null) {
             if (log.isDebugEnabled()) {
-                log.debug("There is no secret repository. Returning alias itself");
+                log.debug("There is no secret repository. Returning alias itself.");
             }
             return alias;
         }
@@ -329,9 +329,9 @@ public class SecretManager {
     }
 
     /**
-     * Get all the provider listed under both secretRepositories and secretProviders properties
+     * Get all the provider listed under both secretRepositories and secretProviders properties.
      *
-     * @param secretConfigurationProperties All the configuration properties
+     * @param secretConfigurationProperties All the configuration properties.
      */
     private void getAllProviders(Properties secretConfigurationProperties) {
 
@@ -340,9 +340,9 @@ public class SecretManager {
     }
 
     /**
-     * Read the providers listed under secretRepositories property
+     * Read the providers listed under secretRepositories property.
      *
-     * @param secretConfigurationProperties All the configuration properties
+     * @param secretConfigurationProperties All the configuration properties.
      */
     private void readLegacyProviders(Properties secretConfigurationProperties) {
 
@@ -357,9 +357,9 @@ public class SecretManager {
     }
 
     /**
-     * Read the providers listed under secretProviders property
+     * Read the providers listed under secretProviders property.
      *
-     * @param secretConfigurationProperties All the configuration properties
+     * @param secretConfigurationProperties All the configuration properties.
      */
     private void readNovelProviders(Properties secretConfigurationProperties) {
 
@@ -374,7 +374,7 @@ public class SecretManager {
     }
 
     /**
-     * Terminates if either properties, secretRepositories or secretProviders haven`t been configured
+     * Terminates if either properties, secretRepositories or secretProviders haven`t been configured.
      */
     private void validateSecureVaultStatus() {
 
@@ -388,11 +388,11 @@ public class SecretManager {
 
     /**
      * Util method to add all the providers from providers array to providers hash map along with the
-     * type (secretRepositories or secretProviders)
+     * type (secretRepositories or secretProviders).
      *
      * @param providersArr repositories array and secretProviders array generated from the properties,
-     *                     secretRepositories or secretProviders
-     * @param providerType secretRepositories or secretProviders
+     *                     secretRepositories or secretProviders.
+     * @param providerType secretRepositories or secretProviders.
      */
     private void addToProvidersMap(String[] providersArr, String providerType) {
 
@@ -402,11 +402,11 @@ public class SecretManager {
     }
 
     /**
-     * Util method for getting property values from the secret-conf file
+     * Util method for getting property values from the secret-conf file.
      *
-     * @param secretConfigProps All the properties under secret configuration file
-     * @param propName          Name of the property
-     * @return Returns the value for the give property
+     * @param secretConfigProps All the properties under secret configuration file.
+     * @param propName          Name of the property.
+     * @return Returns the value for the give property.
      */
     private String getPropertiesFromSecretConfigurations(Properties secretConfigProps, String propName) {
 
@@ -414,16 +414,16 @@ public class SecretManager {
     }
 
     /**
-     * Validate the property value to avoid the processing of null values
+     * Validate the property value to avoid the processing of null values.
      *
-     * @param propValue Value of the required property
-     * @return Return true if not null
+     * @param propValue Value of the required property.
+     * @return Return true if not null.
      */
     private boolean validatePropValue(String propValue) {
 
         if (propValue == null || "".equals(propValue)) {
             if (log.isDebugEnabled()) {
-                log.debug("No secret repositories have been configured");
+                log.debug("No secret repositories have been configured.");
             }
             return false;
         }
@@ -431,36 +431,36 @@ public class SecretManager {
     }
 
     /**
-     * Util method to add the split string of properties, secretRepositories or secretProviders to the Array
+     * Util method to add the split string of properties, secretRepositories or secretProviders to the Array.
      *
-     * @param propValue Value of the property in the secret configuration file
-     * @return An array containing the string
+     * @param propValue Value of the property in the secret configuration file.
+     * @return An array containing the string.
      */
     private String[] addStringToArray(String propValue) {
 
         String[] propValueArr = propValue.split(",");
         if (propValueArr.length == 0) {
             if (log.isDebugEnabled()) {
-                log.debug("No secret repositories have been configured");
+                log.debug("No secret repositories have been configured.");
             }
         }
         return propValueArr;
     }
 
     /**
-     * Creates the TrustKeyStoreWrapper and the IdentityKeyStoreWrapper
+     * Creates the TrustKeyStoreWrapper and the IdentityKeyStoreWrapper.
      *
-     * @param identityKeyStoreWrapper Represents the private keyStore entry
-     * @param trustKeyStoreWrapper    Represents the abstraction for trusted KeyStore
-     * @param properties              Configuration properties
+     * @param identityKeyStoreWrapper Represents the private keyStore entry.
+     * @param trustKeyStoreWrapper    Represents the abstraction for trusted KeyStore.
+     * @param properties              Configuration properties.
      */
     private void createKeyStoreWrappers(IdentityKeyStoreWrapper identityKeyStoreWrapper,
                                         TrustKeyStoreWrapper trustKeyStoreWrapper, Properties properties) {
-        //Create a KeyStore Information  for private key entry KeyStore
+        //Create a KeyStore Information  for private key entry KeyStore.
         IdentityKeyStoreInformation identityInformation =
                 KeyStoreInformationFactory.createIdentityKeyStoreInformation(properties);
 
-        // Create a KeyStore Information for trusted certificate KeyStore
+        // Create a KeyStore Information for trusted certificate KeyStore.
         TrustKeyStoreInformation trustInformation =
                 KeyStoreInformationFactory.createTrustKeyStoreInformation(properties);
 
@@ -495,11 +495,11 @@ public class SecretManager {
     }
 
     /**
-     * Util method to get the properties for a given provider
+     * Util method to get the properties for a given provider.
      *
-     * @param provider         provider type
-     * @param configProperties All the configuration properties
-     * @return Filtered set of properties for a given provider
+     * @param provider         provider type.
+     * @param configProperties All the configuration properties.
+     * @return Filtered set of properties for a given provider.
      */
     private Properties filterConfigurations(String provider, Properties configProperties) {
 
