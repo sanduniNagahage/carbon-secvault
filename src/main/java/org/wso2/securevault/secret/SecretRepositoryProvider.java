@@ -25,25 +25,25 @@ import java.util.HashMap;
 import java.util.Properties;
 
 /**
- * Factory method for creating a instance of a SecretRepository
+ * Factory method for creating a instance of a SecretRepository.
  */
 public interface SecretRepositoryProvider {
 
     /**
-     * Returns a SecretRepository implementation
+     * Returns a SecretRepository implementation.
      *
-     * @param identity Identity KeyStore
-     * @param trust    Trust KeyStore
-     * @return A SecretRepository implementation
+     * @param identity Identity KeyStore.
+     * @param trust    Trust KeyStore.
+     * @return A SecretRepository implementation.
      */
     public SecretRepository getSecretRepository(IdentityKeyStoreWrapper identity, TrustKeyStoreWrapper trust);
 
     /**
-     * Returns a List of initialized SecretRepositories
+     * Returns a List of initialized SecretRepositories.
      *
-     * @param configurationProperties Properties from secret configurations file
-     * @param providerType            Provider type
-     * @return A List of initialized SecretRepositories
+     * @param configurationProperties Properties from secret configurations file.
+     * @param providerType            Provider type.
+     * @return A List of initialized SecretRepositories.
      */
     default HashMap<String, SecretRepository> initProvider(Properties configurationProperties, String providerType) {
 

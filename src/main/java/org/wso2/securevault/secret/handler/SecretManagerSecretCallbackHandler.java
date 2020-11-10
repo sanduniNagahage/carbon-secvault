@@ -24,7 +24,7 @@ import org.wso2.securevault.secret.SingleSecretCallback;
 
 /**
  * SecretManager based secret provider , this can be used by other application
- * to get secret form  SecretManager
+ * to get secret form  SecretManager.
  */
 public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHandler {
 
@@ -41,7 +41,13 @@ public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHa
 
         String id = singleSecretCallback.getId();
         if (id != null && !"".equals(id)) {
+            if(log.isDebugEnabled()){
+                log.debug("The secret annotation provided : " + id);
+            }
             singleSecretCallback.setSecret(secretManager.resolveSecret(id));
+        }
+        else {
+            log.error("Secret Annotation provided is empty.");
         }
     }
 }

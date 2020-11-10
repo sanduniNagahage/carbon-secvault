@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.apache.commons.lang.StringUtils.isEmpty;
+
 /**
  * Entry point for manage secrets.
  */
@@ -54,9 +56,9 @@ public class SecretManager {
     private boolean isNovelProvidersExists = false;
 
     // global password provider implementation class if defined in secret manager conf file.
-    private String globalSecretProvider =null;
+    private String globalSecretProvider = null;
     // property key for global secret provider.
-    private final static String PROP_SECRET_PROVIDER="carbon.secretProvider";
+    private final static String PROP_SECRET_PROVIDER = "carbon.secretProvider";
 
     /* Hash map to keep the providers listed under secretRepositories and secretProviders property. */
     private HashMap<String, String> providers = new HashMap<>();
@@ -64,6 +66,7 @@ public class SecretManager {
     private HashMap<String, SecretRepository> secretRepositories = new HashMap<>();
 
     public static SecretManager getInstance() {
+
         return SECRET_MANAGER;
     }
 
@@ -109,9 +112,9 @@ public class SecretManager {
             return;
         }
 
-        globalSecretProvider = MiscellaneousUtil.getProperty(configurationProperties, PROP_SECRET_PROVIDER,null);
-        if(globalSecretProvider==null || "".equals(globalSecretProvider)){
-            if(log.isDebugEnabled()){
+        globalSecretProvider = MiscellaneousUtil.getProperty(configurationProperties, PROP_SECRET_PROVIDER, null);
+        if (globalSecretProvider == null || "".equals(globalSecretProvider)) {
+            if (log.isDebugEnabled()) {
                 log.debug("No global secret provider is configured.");
             }
         }
@@ -128,7 +131,7 @@ public class SecretManager {
 
         SecretRepository currentParent = null;
         for (Map.Entry singleProvider : providers.entrySet()) {
-            String providerType = (String) singleProvider.getKey();         //file,vault,hsm etc.
+            String providerType = (String) singleProvider.getKey();    //file,vault,hsm etc.
             String propertyName = (String) singleProvider.getValue();  //secretRepositories and secretProviders.
 
             StringBuilder sb = new StringBuilder();
@@ -160,7 +163,7 @@ public class SecretManager {
                         HashMap<String, SecretRepository> providerBasedSecretRepositories =
                                 ((SecretRepositoryProvider) instance).initProvider(filteredConfigs, providerType);
                         secretRepositories.putAll(providerBasedSecretRepositories);
-                    }else {
+                    } else {
                         SecretRepository secretRepository = ((SecretRepositoryProvider) instance).
                                 getSecretRepository(identityKeyStoreWrapper, trustKeyStoreWrapper);
                         secretRepository.init(configurationProperties, id);
@@ -181,9 +184,7 @@ public class SecretManager {
 
             } catch (ClassNotFoundException e) {
                 handleException("A Secret Provider cannot be found for class name : " + provider);
-            } catch (IllegalAccessException e) {
-                handleException("Error creating a instance from class : " + provider);
-            } catch (InstantiationException e) {
+            } catch (IllegalAccessException | InstantiationException e) {
                 handleException("Error creating a instance from class : " + provider);
             }
         }
@@ -192,48 +193,69 @@ public class SecretManager {
     }
 
     /**
-     * Check whether to use the provider listed under secretRepositories
-     * or secretProviders property for resolving secrets.
+     * Split the secret annotation from the delimiter provided and decides whether to use the legacy provider
+     * or a novel provider to obtain the secret value of the requested alias.
      *
      * @param secretAnnotation String contains the alias, the provider type and the repository type.
-     * @return plain text value for the required secret.
+     * @return Plain text value of the required secret.
      */
     public String resolveSecret(String secretAnnotation) {
 
         String[] secretAnnotationStrings = secretAnnotation.split(DELIMITER);
         if (secretAnnotationStrings.length == 1) {
             if (isLegacyProvidersExists) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Getting secrets from legacy provider.");
+                }
                 return getSecret(secretAnnotation);
             }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("Getting secrets from a provider other than the legacy provider. ");
         }
         return resolveSecret(secretAnnotationStrings);
     }
 
     /**
-     * Resolve the secret annotation for the secrets coming from
-     * repositories belongs to providers listed under secretProviders property.
+     * Resolve the secret annotation for the secrets coming from repositories belongs to providers listed under
+     * secretProviders property.
+     * Repositories categorized under providers other than legacy providers will be identified based on the secret
+     * annotation. Under that, When there is only a single repository, provider type and the repository type should
+     * be assigned otherwise, annotation itself is going to be used to get the above-said values.
      *
-     * @param annotation vaule retrieve by the resolveSecret as the value to be resolved.
+     * @param annotation Value retrieve by the resolveSecret as the value to be resolved.
      * @return If there is a secret , otherwise , alias itself.
      */
-    public String resolveSecret(String[] annotation) {
+    private String resolveSecret(String[] annotation) {
 
         int length = annotation.length;
-        try {
-            switch (length) {
-                case 1:
-                    return getSecret((String) providers.keySet().toArray()[0],
-                            (String) secretRepositories.keySet().toArray()[0],
-                            annotation[0]);
-                case 3:
-                    return getSecret(annotation[0], annotation[1], annotation[2]);
-                default:
-                    throw new IllegalArgumentException("Invalid annotation.");
-            }
-        } catch (NullPointerException e) {
-            handleException("No Secret Repositories have been initialized : ");
+
+        switch (length) {
+            case 1:
+                if (providers.isEmpty()) {
+                    log.error("No provider has been configured. Returning the annotation itself.");
+                    return Arrays.toString(annotation);
+                }
+                if (secretRepositories.isEmpty()) {
+                    log.error("No repository has been configured. Returning the annotation itself.");
+                    return Arrays.toString(annotation);
+                }
+                if (log.isDebugEnabled()) {
+                    log.debug("Set the values for the provider and the repository type. Returning the value " +
+                            "for secret annotation.");
+                }
+                return getSecret((String) providers.keySet().toArray()[0],
+                        (String) secretRepositories.keySet().toArray()[0],
+                        annotation[0]);
+            case 3:
+                if (log.isDebugEnabled()) {
+                    log.debug("Returning the value for secret annotation.");
+                }
+                return getSecret(annotation[0], annotation[1], annotation[2]);
+            default:
+                throw new IllegalArgumentException("Invalid Annotation, The annotation expected to have " +
+                        "provider_type : repository_type : alias but got " + Arrays.toString(annotation));
         }
-        return Arrays.toString(annotation);
     }
 
     /**
@@ -243,6 +265,7 @@ public class SecretManager {
      * @return If there is a secret , otherwise , alias itself.
      */
     public String getSecret(String alias) {
+
         if (!initialized || parentRepository == null) {
             if (log.isDebugEnabled()) {
                 log.debug("There is no secret repository. Returning alias itself.");
@@ -253,25 +276,29 @@ public class SecretManager {
     }
 
     /**
-     * Returns the encrypted value corresponding to the given secretAnnotation name where.
+     * Returns the encrypted value corresponding to the given secretAnnotation name where the
      * secretAnnotation consists of provider type, repository type and the alias.
      *
-     * @param provider   provider type.
-     * @param repository repository type.
-     * @param alias      alias to be resolved.
+     * @param provider   Provider type.
+     * @param repository Repository type.
+     * @param alias      Alias to be resolved.
      * @return If there is a secret , otherwise , alias itself.
      */
     public String getSecret(String provider, String repository, String alias) {
 
-        if (providers.containsKey(provider) && secretRepositories.containsKey(repository)) {
-            return secretRepositories.get(repository).getSecret(alias);
+        if (!providers.containsKey(provider)) {
+            log.error("Provider type in the annotation does not match with the configured providers. " +
+                    "Returning the alias itself.");
+            return alias;
         }
-        if (log.isDebugEnabled()) {
-            log.debug("No such secret repository listed under configurations.");
+        if (!secretRepositories.containsKey(repository)) {
+            log.error(
+                    "Repository type in the annotation does not match with the configured repositories. " +
+                            "Returning the alias itself.");
+            return alias;
         }
-        return alias;
+        return secretRepositories.get(repository).getSecret(alias);
     }
-
 
     /**
      * Returns the encrypted value corresponding to the given alias name.
@@ -280,6 +307,7 @@ public class SecretManager {
      * @return If there is a encrypted value , otherwise , alias itself.
      */
     public String getEncryptedData(String alias) {
+
         if (!initialized || parentRepository == null) {
             if (log.isDebugEnabled()) {
                 log.debug("There is no secret repository. Returning alias itself.");
@@ -290,21 +318,25 @@ public class SecretManager {
     }
 
     public boolean isInitialized() {
+
         return initialized;
     }
 
     public void shoutDown() {
+
         this.parentRepository = null;
         this.initialized = false;
     }
 
     private static void handleException(String msg) {
+
         log.error(msg);
         throw new SecureVaultException(msg);
     }
 
     private boolean validatePasswords(String identityStorePass,
                                       String identityKeyPass, String trustStorePass) {
+
         boolean isValid = false;
         if (trustStorePass != null && !"".equals(trustStorePass)) {
             if (log.isDebugEnabled()) {
@@ -325,6 +357,7 @@ public class SecretManager {
     }
 
     public String getGlobalSecretProvider() {
+
         return globalSecretProvider;
     }
 
@@ -390,9 +423,9 @@ public class SecretManager {
      * Util method to add all the providers from providers array to providers hash map along with the
      * type (secretRepositories or secretProviders).
      *
-     * @param providersArr repositories array and secretProviders array generated from the properties,
+     * @param providersArr Repositories array and secretProviders array generated from the properties,
      *                     secretRepositories or secretProviders.
-     * @param providerType secretRepositories or secretProviders.
+     * @param providerType SecretRepositories or secretProviders.
      */
     private void addToProvidersMap(String[] providersArr, String providerType) {
 
@@ -421,9 +454,9 @@ public class SecretManager {
      */
     private boolean validatePropValue(String propValue) {
 
-        if (propValue == null || "".equals(propValue)) {
+        if (isEmpty(propValue)) {
             if (log.isDebugEnabled()) {
-                log.debug("No secret repositories have been configured.");
+                log.debug("No secret repository has been configured.");
             }
             return false;
         }
@@ -456,6 +489,7 @@ public class SecretManager {
      */
     private void createKeyStoreWrappers(IdentityKeyStoreWrapper identityKeyStoreWrapper,
                                         TrustKeyStoreWrapper trustKeyStoreWrapper, Properties properties) {
+
         //Create a KeyStore Information  for private key entry KeyStore.
         IdentityKeyStoreInformation identityInformation =
                 KeyStoreInformationFactory.createIdentityKeyStoreInformation(properties);
@@ -497,7 +531,7 @@ public class SecretManager {
     /**
      * Util method to get the properties for a given provider.
      *
-     * @param provider         provider type.
+     * @param provider         Provider type.
      * @param configProperties All the configuration properties.
      * @return Filtered set of properties for a given provider.
      */
@@ -510,6 +544,9 @@ public class SecretManager {
                 filteredProps.put(propKey, propValue);
             }
         });
+        if (log.isDebugEnabled()) {
+            log.debug("Returning the filtered properties");
+        }
         return filteredProps;
     }
 
