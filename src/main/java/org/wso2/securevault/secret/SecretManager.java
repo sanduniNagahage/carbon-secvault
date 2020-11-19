@@ -61,9 +61,9 @@ public class SecretManager {
     private final static String PROP_SECRET_PROVIDER = "carbon.secretProvider";
 
     /* Hash map to keep the providers listed under secretRepositories and secretProviders property. */
-    private HashMap<String, String> providers = new HashMap<>();
+    private Map<String, String> providers = new HashMap<>();
     /* Hash map to keep the secret repositories coming from a provider listed under secretProviders property. */
-    private HashMap<String, SecretRepository> secretRepositories = new HashMap<>();
+    private Map<String, SecretRepository> secretRepositories = new HashMap<>();
 
     public static SecretManager getInstance() {
 
@@ -71,6 +71,7 @@ public class SecretManager {
     }
 
     private SecretManager() {
+
     }
 
     /**
@@ -160,9 +161,10 @@ public class SecretManager {
                 if (instance instanceof SecretRepositoryProvider) {
                     if (PROP_SECRET_PROVIDERS.equals(propertyName)) {
                         Properties filteredConfigs = filterConfigurations(providerType, configurationProperties);
-                        HashMap<String, SecretRepository> providerBasedSecretRepositories =
+                        Map<String, SecretRepository> providerBasedSecretRepositories =
                                 ((SecretRepositoryProvider) instance).initProvider(filteredConfigs, providerType);
                         secretRepositories.putAll(providerBasedSecretRepositories);
+
                     } else {
                         SecretRepository secretRepository = ((SecretRepositoryProvider) instance).
                                 getSecretRepository(identityKeyStoreWrapper, trustKeyStoreWrapper);
@@ -226,7 +228,7 @@ public class SecretManager {
      * @param annotation Value retrieve by the resolveSecret as the value to be resolved.
      * @return If there is a secret , otherwise , alias itself.
      */
-    private String resolveSecret(String[] annotation) {
+    private String resolveSecret(String[] annotation) throws SecureVaultException {
 
         int length = annotation.length;
 
@@ -251,10 +253,11 @@ public class SecretManager {
                 if (log.isDebugEnabled()) {
                     log.debug("Returning the value for secret annotation.");
                 }
+                // annotation[0] -> provider type, annotation[1] -> repository type, annotation[2] ->alias.
                 return getSecret(annotation[0], annotation[1], annotation[2]);
             default:
-                throw new IllegalArgumentException("Invalid Annotation, The annotation expected to have " +
-                        "provider_type : repository_type : alias but got " + Arrays.toString(annotation));
+                throw new SecureVaultException("Invalid Annotation, The annotation expected to have " +
+                        "[provider_type , repository_type , alias] but got " + Arrays.toString(annotation));
         }
     }
 
@@ -284,7 +287,7 @@ public class SecretManager {
      * @param alias      Alias to be resolved.
      * @return If there is a secret , otherwise , alias itself.
      */
-    public String getSecret(String provider, String repository, String alias) {
+    private String getSecret(String provider, String repository, String alias) {
 
         if (!providers.containsKey(provider)) {
             log.error("Provider type in the annotation does not match with the configured providers. " +
@@ -382,10 +385,10 @@ public class SecretManager {
         String legacyProvidersString =
                 getPropertiesFromSecretConfigurations(secretConfigurationProperties, PROP_SECRET_REPOSITORIES);
 
-        if (validatePropValue(legacyProvidersString)) {
+        if (isPropValueValidated(legacyProvidersString)) {
             isLegacyProvidersExists = true;
-            String[] legacyProvidersArr = addStringToArray(legacyProvidersString);
-            addToProvidersMap(legacyProvidersArr, PROP_SECRET_REPOSITORIES);
+            String[] legacyProviders = addStringToArray(legacyProvidersString);
+            addToProvidersMap(legacyProviders, PROP_SECRET_REPOSITORIES);
         }
     }
 
@@ -399,10 +402,10 @@ public class SecretManager {
         String novelProvidersString =
                 getPropertiesFromSecretConfigurations(secretConfigurationProperties, PROP_SECRET_PROVIDERS);
 
-        if (validatePropValue(novelProvidersString)) {
+        if (isPropValueValidated(novelProvidersString)) {
             isNovelProvidersExists = true;
-            String[] novelProvidersArr = addStringToArray(novelProvidersString);
-            addToProvidersMap(novelProvidersArr, PROP_SECRET_PROVIDERS);
+            String[] novelProviders = addStringToArray(novelProvidersString);
+            addToProvidersMap(novelProviders, PROP_SECRET_PROVIDERS);
         }
     }
 
@@ -423,14 +426,14 @@ public class SecretManager {
      * Util method to add all the providers from providers array to providers hash map along with the
      * type (secretRepositories or secretProviders).
      *
-     * @param providersArr Repositories array and secretProviders array generated from the properties,
-     *                     secretRepositories or secretProviders.
-     * @param providerType SecretRepositories or secretProviders.
+     * @param providersArray Repositories array and secretProviders array generated from the properties,
+     *                       secretRepositories or secretProviders.
+     * @param providerType   SecretRepositories or secretProviders.
      */
-    private void addToProvidersMap(String[] providersArr, String providerType) {
+    private void addToProvidersMap(String[] providersArray, String providerType) {
 
-        for (String arrItem : providersArr) {
-            providers.put(arrItem, providerType);
+        for (String providerName : providersArray) {
+            providers.put(providerName, providerType);
         }
     }
 
@@ -441,7 +444,7 @@ public class SecretManager {
      * @param propName          Name of the property.
      * @return Returns the value for the give property.
      */
-    private String getPropertiesFromSecretConfigurations(Properties secretConfigProps, String propName) {
+    private static String getPropertiesFromSecretConfigurations(Properties secretConfigProps, String propName) {
 
         return MiscellaneousUtil.getProperty(secretConfigProps, propName, null);
     }
@@ -452,7 +455,7 @@ public class SecretManager {
      * @param propValue Value of the required property.
      * @return Return true if not null.
      */
-    private boolean validatePropValue(String propValue) {
+    private static boolean isPropValueValidated(String propValue) {
 
         if (isEmpty(propValue)) {
             if (log.isDebugEnabled()) {
@@ -466,18 +469,18 @@ public class SecretManager {
     /**
      * Util method to add the split string of properties, secretRepositories or secretProviders to the Array.
      *
-     * @param propValue Value of the property in the secret configuration file.
+     * @param propertyValue Value of the property in the secret configuration file.
      * @return An array containing the string.
      */
-    private String[] addStringToArray(String propValue) {
+    private static String[] addStringToArray(String propertyValue) {
 
-        String[] propValueArr = propValue.split(",");
-        if (propValueArr.length == 0) {
+        String[] propertyValues = propertyValue.split(",");
+        if (propertyValues.length == 0) {
             if (log.isDebugEnabled()) {
                 log.debug("No secret repositories have been configured.");
             }
         }
-        return propValueArr;
+        return propertyValues;
     }
 
     /**
@@ -535,7 +538,7 @@ public class SecretManager {
      * @param configProperties All the configuration properties.
      * @return Filtered set of properties for a given provider.
      */
-    private Properties filterConfigurations(String provider, Properties configProperties) {
+    private static Properties filterConfigurations(String provider, Properties configProperties) {
 
         Properties filteredProps = new Properties();
 
@@ -545,7 +548,7 @@ public class SecretManager {
             }
         });
         if (log.isDebugEnabled()) {
-            log.debug("Returning the filtered properties");
+            log.debug("Returning the filtered properties.");
         }
         return filteredProps;
     }

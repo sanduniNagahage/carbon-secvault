@@ -34,20 +34,19 @@ public class SecretManagerSecretCallbackHandler extends AbstractSecretCallbackHa
 
         if (!secretManager.isInitialized()) {
             if (log.isWarnEnabled()) {
-                log.warn("SecretManager has not been initialized.Cannot collect secrets.");
+                log.warn("SecretManager has not been initialized. Cannot collect secrets.");
             }
             return;
         }
 
         String id = singleSecretCallback.getId();
         if (id != null && !"".equals(id)) {
-            if(log.isDebugEnabled()){
-                log.debug("The secret annotation provided : " + id);
+            if (log.isDebugEnabled()) {
+                log.debug("The secret annotation provided is : " + id);
             }
             singleSecretCallback.setSecret(secretManager.resolveSecret(id));
-        }
-        else {
-            log.error("Secret Annotation provided is empty.");
+        } else {
+            log.error("The provided Secret Annotation is empty.");
         }
     }
 }

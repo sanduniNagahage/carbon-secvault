@@ -22,6 +22,7 @@ import org.wso2.securevault.keystore.IdentityKeyStoreWrapper;
 import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -43,9 +44,9 @@ public interface SecretRepositoryProvider {
      *
      * @param configurationProperties Properties from secret configurations file.
      * @param providerType            Provider type.
-     * @return A List of initialized SecretRepositories.
+     * @return A collection of initialized SecretRepositories.
      */
-    default HashMap<String, SecretRepository> initProvider(Properties configurationProperties, String providerType) {
+    default Map<String, SecretRepository> initProvider(Properties configurationProperties, String providerType) {
 
         return new HashMap<>();
     }
