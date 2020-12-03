@@ -22,6 +22,7 @@ import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.wso2.securevault.SecureVaultException;
 
 import java.util.Map;
 import java.util.Properties;
@@ -97,7 +98,7 @@ public class SecretManagerTest {
             Whitebox.invokeMethod(secretManager, "readNovelProviders", getConfigProperties());
             secretManager.resolveSecret("vault:admin_password");
             Assert.fail();
-        } catch (IllegalArgumentException ex) {
+        } catch (SecureVaultException ex) {
             Assert.assertTrue(ex.getMessage().contains(
                     "Invalid Annotation, The annotation expected to have [provider_type , repository_type , alias] but got [vault, admin_password]"));
         }
