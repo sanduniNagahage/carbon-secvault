@@ -23,7 +23,7 @@ import org.wso2.securevault.keystore.TrustKeyStoreWrapper;
 
 
 /**
- * Factory method for creating a instance of a SecretRepository
+ * Factory method for creating a instance of a SecretRepository.
  */
 public interface SecretRepositoryProvider {
 
